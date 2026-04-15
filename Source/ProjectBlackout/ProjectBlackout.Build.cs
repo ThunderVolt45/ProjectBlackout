@@ -18,7 +18,12 @@ public class ProjectBlackout : ModuleRules
 			"StateTreeModule",
 			"GameplayStateTreeModule",
 			"UMG",
-			"Slate"
+			"Slate",
+			"SlateCore",
+			// GAS (Gameplay Ability System)
+			"GameplayAbilities",
+			"GameplayTags",
+			"GameplayTasks"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] { });
@@ -39,9 +44,6 @@ public class ProjectBlackout : ModuleRules
 			"ProjectBlackout/Variant_SideScrolling/Interfaces",
 			"ProjectBlackout/Variant_SideScrolling/UI"
 		});
-
-		// Uncomment if you are using Slate UI
-		// PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });
 
 		// Uncomment if you are using online features
 		// PrivateDependencyModuleNames.Add("OnlineSubsystem");
