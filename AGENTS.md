@@ -22,7 +22,9 @@
 
 | 작업 유형 | 반드시 읽기 | 필요 시 참조 |
 | ---- | ---- | ---- |
-| 커밋 / 브랜치 / PR 작성 | 본 파일 §Key Rules | `CONVENTIONS.md` §4 Git 브랜치 전략 및 커밋 메시지 규칙 |
+| 브랜치 생성 / 전환 | 본 파일 §Key Rules #1 | `CONVENTIONS.md` §4 "브랜치 구조 (Branch Flow)" |
+| 커밋 메시지 작성 | 본 파일 §Key Rules #5 | `CONVENTIONS.md` §4 "커밋 메시지 (Commit Message) 양식" + "태그(Tag) 목록" |
+| PR 생성 / 본문 작성 | `.github/PULL_REQUEST_TEMPLATE.md` | `CONVENTIONS.md` §4 "Pull Request (PR) 가이드" (PR 템플릿 양식 · 작성 예시 · PR 규칙) |
 | 새 C++ 클래스 / 파일 추가 | 본 파일 §핵심 클래스 계층 | `CONVENTIONS.md` §2 C++ 코딩 표준, §3 폴더 구조 |
 | 에셋 네이밍 / 블루프린트 배치 | 본 파일 §Source & Content Structure | `CONVENTIONS.md` §1 에셋 네이밍, §3 Content 디렉토리 |
 | GAS 어빌리티 / 어트리뷰트 구현 | `TDD` §3 어트리뷰트 세트, §4 Gameplay Ability | `TDD` §5 데미지 판정, `GDD` §4 캐릭터 장비 |
