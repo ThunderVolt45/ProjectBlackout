@@ -39,6 +39,8 @@ public class ProjectBlackout : ModuleRules
 			"ProjectBlackout/GAS/Abilities",
 			"ProjectBlackout/GAS/Effects",
 			"ProjectBlackout/Characters",
+			"ProjectBlackout/Framework",
+			"ProjectBlackout/Pool",
 			"ProjectBlackout/Variant_Platforming",
 			"ProjectBlackout/Variant_Platforming/Animation",
 			"ProjectBlackout/Variant_Combat",
