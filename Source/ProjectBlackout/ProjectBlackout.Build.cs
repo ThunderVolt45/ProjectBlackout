@@ -30,6 +30,8 @@ public class ProjectBlackout : ModuleRules
 
 		PublicIncludePaths.AddRange(new string[] {
 			"ProjectBlackout",
+			"ProjectBlackout/Core",
+			"ProjectBlackout/GameplayTags",
 			"ProjectBlackout/Variant_Platforming",
 			"ProjectBlackout/Variant_Platforming/Animation",
 			"ProjectBlackout/Variant_Combat",
