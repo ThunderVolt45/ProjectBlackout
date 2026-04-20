@@ -12,7 +12,7 @@ ABlackoutPlayerState::ABlackoutPlayerState()
 
 	BaseAttributeSet = CreateDefaultSubobject<UBlackoutBaseAttributeSet>(TEXT("BaseAttributeSet"));
 
-	NetUpdateFrequency = 100.f;
+	SetNetUpdateFrequency(100.f);
 }
 
 UAbilitySystemComponent* ABlackoutPlayerState::GetAbilitySystemComponent() const
