@@ -1,7 +1,7 @@
 #include "ExecCalc_DamageCalc.h"
 #include "Attributes/BlackoutBaseAttributeSet.h"
 #include "BlackoutGameplayTags.h"
-#include "BlackoutLogCategories.h"
+#include "BlackoutLog.h"
 
 namespace
 {
@@ -58,7 +58,7 @@ void UExecCalc_DamageCalc::Execute_Implementation(
 
 	// 4. 최종 피해 출력
 	const float FinalDamage = BaseDamage * PartMultiplier * (1.f - DamageReduction);
-	UE_LOG(LogBlackoutGAS, Verbose, TEXT("DamageCalc: Base=%.1f Part=%.2f Reduction=%.2f Final=%.1f"),
+	BO_LOG_GAS(Verbose, "DamageCalc: Base=%.1f Part=%.2f Reduction=%.2f Final=%.1f",
 		BaseDamage, PartMultiplier, DamageReduction, FinalDamage);
 
 	OutExecutionOutput.AddOutputModifier(FGameplayModifierEvaluatedData(

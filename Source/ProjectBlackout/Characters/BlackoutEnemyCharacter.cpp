@@ -3,7 +3,7 @@
 #include "Attributes/BlackoutBaseAttributeSet.h"
 #include "Data/BOMinionData.h"
 #include "Components/CapsuleComponent.h"
-#include "BlackoutLogCategories.h"
+#include "BlackoutLog.h"
 
 ABlackoutEnemyCharacter::ABlackoutEnemyCharacter()
 {
@@ -46,7 +46,7 @@ void ABlackoutEnemyCharacter::OnSpawnFromPool_Implementation()
 			UBlackoutBaseAttributeSet::GetHealthAttribute(), MinionData->MaxHealth);
 	}
 
-	UE_LOG(LogBlackoutPool, Verbose, TEXT("SpawnFromPool: %s"), *GetName());
+	BO_LOG_POOL(Verbose, "SpawnFromPool: %s", *GetName());
 }
 
 void ABlackoutEnemyCharacter::OnReturnToPool_Implementation()
@@ -61,5 +61,5 @@ void ABlackoutEnemyCharacter::OnReturnToPool_Implementation()
 		AbilitySystemComponent->ClearAllAbilitiesAndEffects();
 	}
 
-	UE_LOG(LogBlackoutPool, Verbose, TEXT("ReturnToPool: %s"), *GetName());
+	BO_LOG_POOL(Verbose, "ReturnToPool: %s", *GetName());
 }

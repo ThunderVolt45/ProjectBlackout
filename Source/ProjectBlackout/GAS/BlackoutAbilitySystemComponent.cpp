@@ -1,5 +1,5 @@
 #include "BlackoutAbilitySystemComponent.h"
-#include "BlackoutLogCategories.h"
+#include "BlackoutLog.h"
 
 void UBlackoutAbilitySystemComponent::GiveDefaultAbilities(const TArray<TSubclassOf<UGameplayAbility>>& Abilities)
 {
@@ -15,7 +15,7 @@ void UBlackoutAbilitySystemComponent::GiveDefaultAbilities(const TArray<TSubclas
 			continue;
 		}
 		GiveAbility(FGameplayAbilitySpec(AbilityClass, 1));
-		UE_LOG(LogBlackoutGAS, Verbose, TEXT("Granted ability: %s"), *AbilityClass->GetName());
+		BO_LOG_GAS(Verbose, "Granted ability: %s", *AbilityClass->GetName());
 	}
 }
 
@@ -30,5 +30,5 @@ void UBlackoutAbilitySystemComponent::ClearAllAbilitiesAndEffects()
 
 	// 모든 활성 GE 제거 (풀 반환 시 상태이상/쿨다운 초기화)
 	RemoveActiveEffects(FGameplayEffectQuery());
-	UE_LOG(LogBlackoutGAS, Verbose, TEXT("ASC cleared: %s"), *GetOwner()->GetName());
+	BO_LOG_GAS(Verbose, "ASC cleared: %s", *GetOwner()->GetName());
 }

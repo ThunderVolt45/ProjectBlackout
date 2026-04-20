@@ -1,7 +1,7 @@
 #include "BlackoutBaseAttributeSet.h"
 #include "Net/UnrealNetwork.h"
 #include "GameplayEffectExtension.h"
-#include "BlackoutLogCategories.h"
+#include "BlackoutLog.h"
 
 UBlackoutBaseAttributeSet::UBlackoutBaseAttributeSet()
 {
@@ -58,7 +58,7 @@ void UBlackoutBaseAttributeSet::PostGameplayEffectExecute(const FGameplayEffectM
 
 		if (ClampedHealth <= 0.f)
 		{
-			UE_LOG(LogBlackoutGAS, Log, TEXT("OnDeath triggered: %s"), *GetOwningActor()->GetName());
+			BO_LOG_GAS(Log, "OnDeath triggered: %s", *GetOwningActor()->GetName());
 			// 사망 처리는 ABlackoutCharacterBase::OnDeath()에서 델리게이트로 수신
 		}
 	}

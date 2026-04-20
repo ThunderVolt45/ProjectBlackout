@@ -5,7 +5,7 @@
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
-#include "BlackoutLogCategories.h"
+#include "BlackoutLog.h"
 
 ABlackoutPlayerCharacter::ABlackoutPlayerCharacter()
 {
@@ -42,7 +42,7 @@ void ABlackoutPlayerCharacter::PossessedBy(AController* NewController)
 			if (CharacterData)
 			{
 				AbilitySystemComponent->GiveDefaultAbilities(CharacterData->GrantedAbilities);
-				UE_LOG(LogBlackoutGAS, Log, TEXT("Abilities granted to %s"), *GetName());
+				BO_LOG_GAS(Log, "Abilities granted to %s", *GetName());
 			}
 		}
 	}

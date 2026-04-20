@@ -1,6 +1,6 @@
 #include "BlackoutCharacterBase.h"
 #include "BlackoutAbilitySystemComponent.h"
-#include "BlackoutLogCategories.h"
+#include "BlackoutLog.h"
 
 ABlackoutCharacterBase::ABlackoutCharacterBase()
 {
@@ -15,7 +15,7 @@ UAbilitySystemComponent* ABlackoutCharacterBase::GetAbilitySystemComponent() con
 
 void ABlackoutCharacterBase::OnDeath()
 {
-	UE_LOG(LogBlackout, Log, TEXT("OnDeath: %s"), *GetName());
+	BO_LOG_CORE(Log, "OnDeath: %s", *GetName());
 }
 
 void ABlackoutCharacterBase::OnHitReact()
