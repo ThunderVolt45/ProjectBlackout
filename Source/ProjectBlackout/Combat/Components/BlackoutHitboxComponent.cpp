@@ -4,8 +4,9 @@
 UBlackoutHitboxComponent::UBlackoutHitboxComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
-	SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-	// Setup trace channel block, overlap ignore...
+	UBoxComponent::SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	
+	// 트레이스 채널 블록, 오버랩 무시 등 설정...
 }
 
 void UBlackoutHitboxComponent::ReceiveDamageSpec(const FGameplayEffectSpecHandle& SpecHandle)
@@ -16,9 +17,6 @@ void UBlackoutHitboxComponent::ReceiveDamageSpec(const FGameplayEffectSpecHandle
 		{
 			// 필요한 경우 SpecHandle에 PartTag 및 Multiplier 주입
 			Damageable->ReceiveDamageFromHitbox(SpecHandle, AttachedBoneName);
-		}
-	}
-}
 		}
 	}
 }
