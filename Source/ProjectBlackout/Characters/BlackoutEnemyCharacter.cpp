@@ -22,7 +22,7 @@ void ABlackoutEnemyCharacter::BeginPlay()
 		AbilitySystemComponent->InitAbilityActorInfo(this, this);
 
 		// 기본 AttributeSet 추가 및 MinionData 수치 주입
-		UBlackoutBaseAttributeSet* AttrSet = AbilitySystemComponent->GetSet<UBlackoutBaseAttributeSet>();
+		const UBlackoutBaseAttributeSet* AttrSet = AbilitySystemComponent->GetSet<UBlackoutBaseAttributeSet>();
 		if (AttrSet && MinionData)
 		{
 			AbilitySystemComponent->SetNumericAttributeBase(
