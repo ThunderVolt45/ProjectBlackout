@@ -29,8 +29,7 @@ void ABlackoutPlayerCharacter::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
 
-	// PlayerState가 IAbilitySystemInterface를 구현하면 ASC를 가져와 초기화
-	// (ABlackoutPlayerState 헤더 직접 의존 없이 인터페이스로 접근)
+	// Server: InitAbilityActorInfo
 	if (IAbilitySystemInterface* ASCInterface = Cast<IAbilitySystemInterface>(GetPlayerState()))
 	{
 		AbilitySystemComponent = Cast<UBlackoutAbilitySystemComponent>(
@@ -45,6 +44,23 @@ void ABlackoutPlayerCharacter::PossessedBy(AController* NewController)
 				AbilitySystemComponent->GiveDefaultAbilities(CharacterData->GrantedAbilities);
 				BO_LOG_GAS(Log, "Abilities granted to %s", *GetName());
 			}
+		}
+	}
+}
+
+void ABlackoutPlayerCharacter::OnRep_PlayerState()
+{
+	Super::OnRep_PlayerState();
+
+	// Client: InitAbilityActorInfo
+	if (IAbilitySystemInterface* ASCInterface = Cast<IAbilitySystemInterface>(GetPlayerState()))
+	{
+		AbilitySystemComponent = Cast<UBlackoutAbilitySystemComponent>(
+			ASCInterface->GetAbilitySystemComponent());
+
+		if (AbilitySystemComponent)
+		{
+			AbilitySystemComponent->InitAbilityActorInfo(GetPlayerState(), this);
 		}
 	}
 }

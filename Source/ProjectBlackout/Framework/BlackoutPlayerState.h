@@ -7,8 +7,10 @@
 #include "Core/BlackoutTypes.h"
 #include "BlackoutPlayerState.generated.h"
 
-class UBlackoutAbilitySystemComponent;
+class UBlackoutAmmoAttributeSet;
+class UBlackoutPlayerAttributeSet;
 class UBlackoutBaseAttributeSet;
+class UBlackoutAbilitySystemComponent;
 
 UCLASS()
 class PROJECTBLACKOUT_API ABlackoutPlayerState : public APlayerState, public IAbilitySystemInterface
@@ -44,6 +46,12 @@ protected:
 
 	UPROPERTY()
 	TObjectPtr<const UBlackoutBaseAttributeSet> BaseAttributeSet;
+
+	UPROPERTY()
+	TObjectPtr<const UBlackoutPlayerAttributeSet> PlayerAttributeSet;
+
+	UPROPERTY()
+	TObjectPtr<const UBlackoutAmmoAttributeSet> AmmoAttributeSet;
 
 	UFUNCTION()
 	void OnRep_SelectedClassTag();

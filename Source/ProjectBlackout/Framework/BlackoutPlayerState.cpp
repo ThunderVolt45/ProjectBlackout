@@ -1,8 +1,10 @@
 #include "BlackoutPlayerState.h"
 #include "BlackoutAbilitySystemComponent.h"
+#include "BlackoutAmmoAttributeSet.h"
 #include "Attributes/BlackoutBaseAttributeSet.h"
 #include "Net/UnrealNetwork.h"
 #include "BlackoutLog.h"
+#include "BlackoutPlayerAttributeSet.h"
 
 ABlackoutPlayerState::ABlackoutPlayerState()
 {
@@ -11,6 +13,8 @@ ABlackoutPlayerState::ABlackoutPlayerState()
 	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Mixed);
 
 	BaseAttributeSet = CreateDefaultSubobject<UBlackoutBaseAttributeSet>(TEXT("BaseAttributeSet"));
+	PlayerAttributeSet = CreateDefaultSubobject<UBlackoutPlayerAttributeSet>(TEXT("PlayerAttributeSet"));
+	AmmoAttributeSet = CreateDefaultSubobject<UBlackoutAmmoAttributeSet>(TEXT("AmmoAttributeSet"));
 
 	SetNetUpdateFrequency(100.f);
 }
