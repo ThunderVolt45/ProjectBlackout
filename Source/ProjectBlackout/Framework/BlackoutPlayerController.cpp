@@ -1,4 +1,6 @@
 #include "BlackoutPlayerController.h"
+
+#include "BlackoutLobbyGameMode.h"
 #include "BlackoutPlayerState.h"
 #include "BlackoutLog.h"
 #include "EnhancedInputSubsystems.h"
@@ -10,6 +12,22 @@ void ABlackoutPlayerController::Server_SelectClass_Implementation(FGameplayTag C
 	{
 		PS->SelectedClassTag = ClassTag;
 		BO_LOG_NET(Log, "Server_SelectClass: %s → %s", *GetName(), *ClassTag.ToString());
+	}
+}
+
+void ABlackoutPlayerController::Server_SetReady_Implementation(bool bNewReady)
+{
+	ABlackoutPlayerState* PS = GetPlayerState<ABlackoutPlayerState>();
+	if (!PS)
+	{
+		return;
+	}
+	PS->bIsReady = bNewReady;
+	BO_LOG_NET(Log , "Server_SetReady:%s -> %s",*GetName(), bNewReady ? TEXT("Ready") : TEXT("NotReady"));
+	
+	if (ABlackoutLobbyGameMode* LobbyMode = GetWorld()->GetAuthGameMode<ABlackoutLobbyGameMode>())
+	{
+		LobbyMode->NotifyReadyChanged();
 	}
 }
 
