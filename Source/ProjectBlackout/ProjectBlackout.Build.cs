@@ -47,20 +47,7 @@ public class ProjectBlackout : ModuleRules
 			"ProjectBlackout/Characters",
 			"ProjectBlackout/AI",
 			"ProjectBlackout/Framework",
-			"ProjectBlackout/Pool",
-			"ProjectBlackout/Variant_Platforming",
-			"ProjectBlackout/Variant_Platforming/Animation",
-			"ProjectBlackout/Variant_Combat",
-			"ProjectBlackout/Variant_Combat/AI",
-			"ProjectBlackout/Variant_Combat/Animation",
-			"ProjectBlackout/Variant_Combat/Gameplay",
-			"ProjectBlackout/Variant_Combat/Interfaces",
-			"ProjectBlackout/Variant_Combat/UI",
-			"ProjectBlackout/Variant_SideScrolling",
-			"ProjectBlackout/Variant_SideScrolling/AI",
-			"ProjectBlackout/Variant_SideScrolling/Gameplay",
-			"ProjectBlackout/Variant_SideScrolling/Interfaces",
-			"ProjectBlackout/Variant_SideScrolling/UI"
+			"ProjectBlackout/Pool"
 		});
 
 		// Uncomment if you are using online features
