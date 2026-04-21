@@ -16,6 +16,9 @@ public:
 	
 	UFUNCTION(Server, Reliable, BlueprintCallable, Category = "Blackout|Controller")
 	void Server_SelectClass(FGameplayTag ClassTag);
+	
+	UFUNCTION(Server, Reliable , BlueprintCallable , Category= "Blackout|Controller")
+	void Server_SetReady(bool bNewReady);
 
 	UFUNCTION(Client, Reliable, BlueprintCallable, Category = "Blackout|Controller")
 	void Client_OpenClassSelectUI();
