@@ -22,7 +22,7 @@ EBTNodeResult::Type UBTTask_SpawnMinionWave::ExecuteTask(UBehaviorTreeComponent&
 		return EBTNodeResult::Failed;
 	}
 
-	UBlackoutPoolSubsystem* PoolSubsystem = World->GetGameInstance()->GetSubsystem<UBlackoutPoolSubsystem>();
+	UBlackoutPoolSubsystem* PoolSubsystem = World->GetSubsystem<UBlackoutPoolSubsystem>();
 	if (!PoolSubsystem)
 	{
 		return EBTNodeResult::Failed;
