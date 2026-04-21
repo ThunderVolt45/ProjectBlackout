@@ -156,7 +156,7 @@ GE와 ExecCalc(실행 계산기)를 사용해, 피격 처리와 기믹 보상을
 - **메인 보스 (타락한 약탈자 - Corrupted Ravager, StateTree 3-Phase + 하위 BT)**: StateTree의 `FBSTEval_HealthRatio`가 HP 비율을 지속 퍼블리시하고, `FBSTCond_HealthBelow` 전이로 페이즈 분기.
   - `Phase A` (100~60%): **기동성 압박**. 주요 패턴은 `GA_Ravager_DoubleSwipe`(넓은 대각선 할퀴기 엇박자 콤보).
     - `GA_Ravager_LungeAttackCombo`(도약하여 덮친 뒤 할퀴기+물기를 연속으로 잇는 **복합 콤보 — 기존 TurnBite를 이 콤보의 물기 단계로 흡수**)
-    - `GA_Ravager_BackwardJump`(회피 이동) → `GA_Ravager_ChargedShockwave`(앞발 충전 후 바닥을 타고 날아가는 가로 형태 장풍) **연계기**
+    - `GA_Ravager_BackwardJump`(회피 이동) → `GA_Ravager_Shockwave`(앞발 충전 후 바닥을 타고 날아가는 가로 형태 장풍) **연계기**
     - `GA_Ravager_SummonMinion`(Root Hollow/Root Wraith 간헐 스폰).
   - `Phase B` (60~30%): 전환 트리거 `GA_Ravager_Howl_Phase`(붉은 안개 포효) → `GE_Enrage` 적용으로 공격/이동 속도 증가.
     - `GCN_RedMist [Actor]` 지속 이펙트 활성화.
