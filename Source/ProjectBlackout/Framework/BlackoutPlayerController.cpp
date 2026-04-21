@@ -1,6 +1,8 @@
 #include "BlackoutPlayerController.h"
 #include "BlackoutPlayerState.h"
 #include "BlackoutLog.h"
+#include "EnhancedInputSubsystems.h"
+#include "InputMappingContext.h"
 
 void ABlackoutPlayerController::Server_SelectClass_Implementation(FGameplayTag ClassTag)
 {
@@ -26,3 +28,37 @@ void ABlackoutPlayerController::Client_ShowDamageNumber_Implementation(float Dam
 {
 	ReceiveShowDamageNumber(DamageAmount, bIsCritical);
 }
+
+#pragma region InputSetup
+
+void ABlackoutPlayerController::SetupInputComponent()
+{
+	Super::SetupInputComponent();
+
+	if (!IsLocalPlayerController())
+	{
+		return;
+	}
+
+	ULocalPlayer* LocalPlayer = GetLocalPlayer();
+	if (!LocalPlayer)
+	{
+		return;
+	}
+
+	if (UEnhancedInputLocalPlayerSubsystem* InputSubsystem =
+		ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(LocalPlayer))
+	{
+		if (DefaultMappingContext)
+		{
+			InputSubsystem->AddMappingContext(DefaultMappingContext, 0);
+		}
+
+		if (MouseLookMappingContext)
+		{
+			InputSubsystem->AddMappingContext(MouseLookMappingContext, 0);
+		}
+	}
+}
+
+#pragma endregion 

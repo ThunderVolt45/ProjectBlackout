@@ -5,12 +5,15 @@
 #include "GameplayTagContainer.h"
 #include "BlackoutPlayerController.generated.h"
 
+class UInputMappingContext;
 UCLASS()
 class PROJECTBLACKOUT_API ABlackoutPlayerController : public APlayerController
 {
 	GENERATED_BODY()
 
 public:
+	
+	
 	UFUNCTION(Server, Reliable, BlueprintCallable, Category = "Blackout|Controller")
 	void Server_SelectClass(FGameplayTag ClassTag);
 
@@ -28,4 +31,20 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Blackout|Controller")
 	void EnterSpectatorMode();
+	
+#pragma region InputSetup 
+public:
+	virtual void SetupInputComponent() override;
+	
+protected:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Blackout|Input")
+	TObjectPtr<UInputMappingContext> DefaultMappingContext;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Blackout|Input")
+	TObjectPtr<UInputMappingContext> MouseLookMappingContext;
+	
+	
+	
+#pragma endregion 
+	
 };
