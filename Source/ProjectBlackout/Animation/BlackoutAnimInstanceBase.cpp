@@ -3,7 +3,6 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "AbilitySystemComponent.h"
 #include "GameplayTags/BlackoutGameplayTags.h"
-#include "Kismet/KismetMathLibrary.h"
 #include "KismetAnimationLibrary.h"
 
 void UBlackoutAnimInstanceBase::NativeInitializeAnimation()
