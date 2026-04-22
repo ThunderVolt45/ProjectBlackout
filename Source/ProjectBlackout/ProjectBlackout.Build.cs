@@ -20,6 +20,7 @@ public class ProjectBlackout : ModuleRules
 			"UMG",
 			"Slate",
 			"SlateCore",
+			"AnimGraphRuntime",
 			// GAS (Gameplay Ability System)
 			"GameplayAbilities",
 			"GameplayTags",
