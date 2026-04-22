@@ -9,6 +9,7 @@
 class UInputMappingContext;
 class UInputAction;
 class UBlackoutAbilitySystemComponent;
+class UBlackoutCombatComponent;
 
 UCLASS()
 class PROJECTBLACKOUT_API ABlackoutPlayerController : public APlayerController
@@ -51,6 +52,9 @@ protected:
 	TObjectPtr<UInputAction> FireAction;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Blackout|Input")
+	TObjectPtr<UInputAction> AimAction;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Blackout|Input")
 	TObjectPtr<UInputAction> ReloadAction;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Blackout|Input")
@@ -64,8 +68,9 @@ protected:
 
 	void OnFirePressed();
 	void OnFireReleased();
+	void OnAimPressed();
+	void OnAimReleased();
 	void OnReloadPressed();
-	void OnMeleePressed();
 	void OnDodgePressed();
 	void OnSprintPressed();
 	void OnSprintReleased();
@@ -73,6 +78,7 @@ protected:
 	void HandleAbilityInputPressed(EBlackoutAbilityInputID InputID);
 	void HandleAbilityInputReleased(EBlackoutAbilityInputID InputID);
 	UBlackoutAbilitySystemComponent* GetBlackoutAbilitySystemComponent() const;
+	UBlackoutCombatComponent* GetBlackoutCombatComponent() const;
 
 #pragma endregion 
 	
