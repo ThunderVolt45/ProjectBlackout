@@ -1,8 +1,6 @@
 #include "AI/BTService_UpdateTargetData.h"
-#include "AIController.h"
+#include "AI/BTNodeHelper.h"
 #include "BehaviorTree/BlackboardComponent.h"
-#include "GameFramework/Actor.h"
-#include "GameFramework/Pawn.h"
 #include "KismetAnimationLibrary.h"
 
 UBTService_UpdateTargetData::UBTService_UpdateTargetData()
@@ -16,13 +14,10 @@ void UBTService_UpdateTargetData::TickNode(UBehaviorTreeComponent& OwnerComp, ui
 {
 	Super::TickNode(OwnerComp, NodeMemory, DeltaSeconds);
 
-	AAIController* AIController = OwnerComp.GetAIOwner();
-	UBlackboardComponent* BB = OwnerComp.GetBlackboardComponent();
-	if (!AIController || !BB) return;
-
-	APawn* AIPawn = AIController->GetPawn();
-	AActor* Target = Cast<AActor>(BB->GetValueAsObject(TargetKey.SelectedKeyName));
-	if (!AIPawn || !Target) return;
+	UBlackboardComponent* BB = UBTNodeHelper::GetBlackboard(OwnerComp);
+	APawn* AIPawn = UBTNodeHelper::GetAIPawn(OwnerComp);
+	AActor* Target = UBTNodeHelper::GetActorFromBB(OwnerComp, TargetKey);
+	if (!BB || !AIPawn || !Target) return;
 
 	const FVector AILocation = AIPawn->GetActorLocation();
 	const FVector TargetLocation = Target->GetActorLocation();
