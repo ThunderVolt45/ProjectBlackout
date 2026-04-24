@@ -106,6 +106,11 @@ void ABlackoutPlayerController::SetupInputComponent()
 		EnhancedInputComponent->BindAction(ReloadAction, ETriggerEvent::Started, this, &ABlackoutPlayerController::OnReloadPressed);
 	}
 
+	if (SwapWeaponAction)
+	{
+		EnhancedInputComponent->BindAction(SwapWeaponAction, ETriggerEvent::Started, this, &ABlackoutPlayerController::OnSwapWeaponPressed);
+	}
+
 	if (DodgeAction)
 	{
 		EnhancedInputComponent->BindAction(DodgeAction, ETriggerEvent::Started, this, &ABlackoutPlayerController::OnDodgePressed);
@@ -160,6 +165,14 @@ void ABlackoutPlayerController::OnReloadPressed()
 {
 	HandleAbilityInputPressed(EBlackoutAbilityInputID::Reload);
 	HandleAbilityInputReleased(EBlackoutAbilityInputID::Reload);
+}
+
+void ABlackoutPlayerController::OnSwapWeaponPressed()
+{
+	if (UBlackoutCombatComponent* CombatComponent = GetBlackoutCombatComponent())
+	{
+		CombatComponent->SwapWeapon();
+	}
 }
 
 void ABlackoutPlayerController::OnDodgePressed()

@@ -58,6 +58,9 @@ protected:
 	TObjectPtr<UInputAction> ReloadAction;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Blackout|Input")
+	TObjectPtr<UInputAction> SwapWeaponAction;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Blackout|Input")
 	TObjectPtr<UInputAction> DodgeAction;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Blackout|Input")
@@ -68,6 +71,7 @@ protected:
 	void OnAimPressed();
 	void OnAimReleased();
 	void OnReloadPressed();
+	void OnSwapWeaponPressed();
 	void OnDodgePressed();
 	void OnSprintPressed();
 	void OnSprintReleased();
