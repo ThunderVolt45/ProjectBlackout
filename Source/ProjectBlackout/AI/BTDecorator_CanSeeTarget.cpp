@@ -1,7 +1,5 @@
 #include "AI/BTDecorator_CanSeeTarget.h"
-#include "AIController.h"
-#include "BehaviorTree/BlackboardComponent.h"
-#include "GameFramework/Actor.h"
+#include "AI/BTNodeHelper.h"
 
 UBTDecorator_CanSeeTarget::UBTDecorator_CanSeeTarget()
 {
@@ -10,12 +8,9 @@ UBTDecorator_CanSeeTarget::UBTDecorator_CanSeeTarget()
 
 bool UBTDecorator_CanSeeTarget::CalculateRawConditionValue(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) const
 {
-	AAIController* AIController = OwnerComp.GetAIOwner();
-	const UBlackboardComponent* BB = OwnerComp.GetBlackboardComponent();
-	if (!AIController || !BB) return false;
+	AAIController* AI = UBTNodeHelper::GetAIController(OwnerComp);
+	AActor* Target = UBTNodeHelper::GetActorFromBB(OwnerComp, TargetKey);
+	if (!AI || !Target) return false;
 
-	AActor* Target = Cast<AActor>(BB->GetValueAsObject(TargetKey.SelectedKeyName));
-	if (!Target) return false;
-
-	return AIController->LineOfSightTo(Target);
+	return AI->LineOfSightTo(Target);
 }
