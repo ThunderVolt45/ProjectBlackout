@@ -315,20 +315,28 @@ ABOWeaponBase* UBlackoutCombatComponent::SpawnWeaponActor(TSubclassOf<ABOWeaponB
 
 void UBlackoutCombatComponent::RefreshWeaponAttachments() const
 {
-	auto AttachWeapon = [](ABOWeaponBase* Weapon, const FName SocketName)
+	auto AttachWeapon = [](ABOWeaponBase* Weapon, const bool bAttachAsEquipped, const FName FallbackSocketName)
 	{
 		if (!Weapon)
 		{
 			return;
 		}
 
+		Weapon->InitializeStatsFromDataTable();
+
+		const FName WeaponSocketName = bAttachAsEquipped ? Weapon->GetEquippedSocketName() : Weapon->GetHolsterSocketName();
+		const FName SocketName = WeaponSocketName.IsNone() ? FallbackSocketName : WeaponSocketName;
+
 		Weapon->SetActorHiddenInGame(false);
 		Weapon->AttachToOwner(SocketName);
 	};
 
-	AttachWeapon(PrimaryWeapon, EquippedWeapon == PrimaryWeapon ? EquippedWeaponSocketName : PrimaryHolsterSocketName);
-	AttachWeapon(SecondaryWeapon, EquippedWeapon == SecondaryWeapon ? EquippedWeaponSocketName : SecondaryHolsterSocketName);
-	AttachWeapon(MeleeWeapon, MeleeHolsterSocketName);
+	const bool bPrimaryEquipped = EquippedWeapon == PrimaryWeapon;
+	const bool bSecondaryEquipped = EquippedWeapon == SecondaryWeapon;
+
+	AttachWeapon(PrimaryWeapon, bPrimaryEquipped, bPrimaryEquipped ? EquippedWeaponSocketName : PrimaryHolsterSocketName);
+	AttachWeapon(SecondaryWeapon, bSecondaryEquipped, bSecondaryEquipped ? EquippedWeaponSocketName : SecondaryHolsterSocketName);
+	AttachWeapon(MeleeWeapon, false, MeleeHolsterSocketName);
 }
 
 void UBlackoutCombatComponent::ApplyInitialAmmoLoadout() const

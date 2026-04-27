@@ -41,13 +41,23 @@ void ABOWeaponBase::ApplyCommonStats(const FBlackoutWeaponStat& WeaponStats)
 
 ABlackoutCharacterBase* ABOWeaponBase::GetOwningCharacter() const
 {
-	// Assuming owner is set when equipping
+	// 장착 시점에 Owner가 캐릭터로 지정되는 것을 전제로 합니다.
 	return Cast<ABlackoutCharacterBase>(GetOwner());
 }
 
 float ABOWeaponBase::GetBaseDamage() const
 {
 	return CachedStats.BaseDamage;
+}
+
+FName ABOWeaponBase::GetEquippedSocketName() const
+{
+	return CachedStats.EquippedSocketName;
+}
+
+FName ABOWeaponBase::GetHolsterSocketName() const
+{
+	return CachedStats.HolsterSocketName;
 }
 
 void ABOWeaponBase::AttachToOwner(FName SocketName)
