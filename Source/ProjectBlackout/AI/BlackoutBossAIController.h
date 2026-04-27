@@ -4,6 +4,8 @@
 #include "AI/BlackoutAIController.h"
 #include "AI/BossPhaseManager.h"
 #include "AI/BossBTRunner.h"
+#include "Perception/AIPerceptionComponent.h"
+#include "Perception/AISenseConfig_Sight.h"
 #include "BlackoutBossAIController.generated.h"
 
 class UBehaviorTreeComponent;
@@ -33,7 +35,7 @@ public:
 
 	// ── BT 퍼사드 (FBSTTask_RunSubBehaviorTree 에서 호출) ─────────────────────
 	UFUNCTION(BlueprintCallable, Category = "Blackout|AI")
-	void RunSubBehaviorTree(UBehaviorTree* SubTree);
+	void RunSubBehaviorTree(UBehaviorTree* SubTree, APawn* InitialTarget = nullptr);
 
 	UFUNCTION(BlueprintCallable, Category = "Blackout|AI")
 	void StopSubBehaviorTree();
@@ -49,13 +51,23 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Blackout|AI")
 	void RequestPhaseExit();
 
+protected:
+	virtual void InitPerception() override;
+	virtual void Tick(float DeltaSeconds) override;
+
 private:
+	UFUNCTION()
+	void OnTargetPerceived(AActor* Actor, FAIStimulus Stimulus);
+
 	// Actor에 소속된 컴포넌트 (GC 및 네트워크 컨텍스트 필요)
 	UPROPERTY(VisibleAnywhere, Category = "Blackout|AI")
 	TObjectPtr<UBehaviorTreeComponent> SubBTComp;
 
 	UPROPERTY(VisibleAnywhere, Category = "Blackout|AI")
 	TObjectPtr<UBlackboardComponent> BBComp;
+
+	UPROPERTY(VisibleAnywhere, Category = "Blackout|AI")
+	TObjectPtr<UAIPerceptionComponent> PerceptionComp;
 
 	// 책임 분리된 로직 매니저 (서버 전용 UObject, Outer = this)
 	UPROPERTY()
