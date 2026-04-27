@@ -86,13 +86,26 @@ FHitResult UBlackoutGA_FireWeapon::PerformTrace(const FVector& Start, const FVec
 FGameplayEffectSpecHandle UBlackoutGA_FireWeapon::BuildDamageSpec(const ABOFirearm* Firearm)
 {
 	FGameplayEffectSpecHandle SpecHandle;
-	if (DamageEffectClass && Firearm && GetAbilitySystemComponentFromActorInfo())
+	if (!DamageEffectClass)
+	{
+		BO_LOG_GAS(Error, "BuildDamageSpec failed: DamageEffectClass가 설정되지 않음 (Ability=%s)", *GetNameSafe(this));
+		return SpecHandle;
+	}
+
+	if (Firearm && GetAbilitySystemComponentFromActorInfo())
 	{
 		SpecHandle = MakeOutgoingGameplayEffectSpec(DamageEffectClass, GetAbilityLevel());
 		if (SpecHandle.IsValid())
 		{
 			SpecHandle.Data->SetSetByCallerMagnitude(BlackoutGameplayTags::Data_Damage, Firearm->GetBaseDamage());
 		}
+	}
+	else
+	{
+		BO_LOG_GAS(Warning,
+		           "BuildDamageSpec failed: Firearm=%s ASC=%s",
+		           *GetNameSafe(Firearm),
+		           *GetNameSafe(GetAbilitySystemComponentFromActorInfo()));
 	}
 	return SpecHandle;
 }

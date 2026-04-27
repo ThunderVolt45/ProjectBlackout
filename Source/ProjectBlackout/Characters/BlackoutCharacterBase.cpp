@@ -3,11 +3,25 @@
 #include "AbilitySystemComponent.h"
 #include "BlackoutAbilitySystemComponent.h"
 #include "BlackoutLog.h"
+#include "Components/CapsuleComponent.h"
+#include "Components/SkeletalMeshComponent.h"
+#include "Core/BlackoutCollisionChannels.h"
 
 ABlackoutCharacterBase::ABlackoutCharacterBase()
 {
 	PrimaryActorTick.bCanEverTick = false;
 	bReplicates = true;
+
+	GetCapsuleComponent()->SetCollisionResponseToChannel(BlackoutCollisionChannels::WeaponTrace, ECR_Block);
+	GetMesh()->SetCollisionResponseToChannel(BlackoutCollisionChannels::WeaponTrace, ECR_Block);
+}
+
+void ABlackoutCharacterBase::BeginPlay()
+{
+	Super::BeginPlay();
+
+	GetCapsuleComponent()->SetCollisionResponseToChannel(BlackoutCollisionChannels::WeaponTrace, ECR_Block);
+	GetMesh()->SetCollisionResponseToChannel(BlackoutCollisionChannels::WeaponTrace, ECR_Block);
 }
 
 UAbilitySystemComponent* ABlackoutCharacterBase::GetAbilitySystemComponent() const

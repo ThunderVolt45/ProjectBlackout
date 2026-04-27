@@ -10,6 +10,7 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "Combat/Components/BlackoutHitboxComponent.h"
 #include "Combat/Weapons/BOProjectile.h"
+#include "Core/BlackoutCollisionChannels.h"
 #include "Core/BlackoutLog.h"
 #include "GAS/Attributes/BlackoutBaseAttributeSet.h"
 #include "Interfaces/BlackoutDamageable.h"
@@ -67,7 +68,7 @@ FHitResult ABOFirearm::Fire(const FVector& Direction, const FGameplayEffectSpecH
 			FCollisionQueryParams QueryParams(SCENE_QUERY_STAT(BOFirearm_Fire), false, GetOwner());
 			QueryParams.AddIgnoredActor(this);
 
-			World->LineTraceSingleByChannel(HitResult, TraceStart, TraceEnd, ECC_Visibility, QueryParams);
+			World->LineTraceSingleByChannel(HitResult, TraceStart, TraceEnd, BlackoutCollisionChannels::WeaponTrace, QueryParams);
 			AActor* HitActor = HitResult.GetActor();
 			UPrimitiveComponent* HitComponent = HitResult.GetComponent();
 			AActor* DamageTargetActor = HitActor;
@@ -119,6 +120,14 @@ FHitResult ABOFirearm::Fire(const FVector& Direction, const FGameplayEffectSpecH
 				else if (bAppliedDamage)
 				{
 					DamageText = TEXT("Unknown");
+				}
+				else if (!HasAuthority())
+				{
+					DamageText = TEXT("ClientOnly");
+				}
+				else if (!DamageSpecHandle.IsValid())
+				{
+					DamageText = TEXT("InvalidSpec");
 				}
 
 				BO_SCREEN_CORE(Log,

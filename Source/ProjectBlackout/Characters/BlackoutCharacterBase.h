@@ -29,6 +29,8 @@ public:
 	virtual void ReceiveDamageFromHitbox(const FGameplayEffectSpecHandle& SpecHandle, FName BoneName) override;
 
 protected:
+	virtual void BeginPlay() override;
+
 	/** 서브클래스에서 초기화 후 설정. 직접 소유하지 않으므로 UPROPERTY로 참조만 유지. */
 	UPROPERTY()
 	TObjectPtr<UBlackoutAbilitySystemComponent> AbilitySystemComponent;
