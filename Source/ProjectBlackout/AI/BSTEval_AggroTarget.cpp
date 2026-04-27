@@ -2,16 +2,18 @@
 #include "StateTreeExecutionContext.h"
 #include "AIController.h"
 #include "Perception/AIPerceptionComponent.h"
+#include "Characters/BlackoutPlayerCharacter.h"
 
 void FBSTEval_AggroTarget::Tick(FStateTreeExecutionContext& Context, const float DeltaTime) const
 {
 	FInstanceDataType& Data = Context.GetInstanceData(*this);
-	if (!Data.Controller) return;
+	if (!Data.Controller || !Data.Controller->HasAuthority()) return;
+
+	APawn* OwnerPawn = Data.Controller->GetPawn();
+	if (!OwnerPawn) return;
 
 	UAIPerceptionComponent* PerceptionComp = Data.Controller->GetAIPerceptionComponent();
 	if (!PerceptionComp) return;
-
-	APawn* OwnerPawn = Data.Controller->GetPawn();
 
 	TArray<AActor*> Perceived;
 	PerceptionComp->GetCurrentlyPerceivedActors(nullptr, Perceived);
@@ -21,16 +23,16 @@ void FBSTEval_AggroTarget::Tick(FStateTreeExecutionContext& Context, const float
 
 	for (AActor* Actor : Perceived)
 	{
-		APawn* Pawn = Cast<APawn>(Actor);
-		if (!Pawn || Pawn == OwnerPawn) continue;
+		ABlackoutPlayerCharacter* Player = Cast<ABlackoutPlayerCharacter>(Actor);
+		if (!Player) continue;
 
 		const float DistSq = FVector::DistSquared(
-			OwnerPawn->GetActorLocation(), Pawn->GetActorLocation());
+			OwnerPawn->GetActorLocation(), Player->GetActorLocation());
 
 		if (DistSq < BestDistSq)
 		{
 			BestDistSq = DistSq;
-			BestTarget = Pawn;
+			BestTarget = Player;
 		}
 	}
 
