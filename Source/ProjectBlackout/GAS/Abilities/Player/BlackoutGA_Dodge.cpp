@@ -4,6 +4,7 @@
 #include "Characters/BlackoutPlayerCharacter.h"
 #include "Combat/Components/BlackoutCombatComponent.h"
 #include "Animation/AnimMontage.h"
+#include "GAS/Abilities/Player/BlackoutGA_MeleePlayer.h"
 #include "GAS/BlackoutAbilitySystemComponent.h"
 #include "Core/BlackoutLog.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -46,6 +47,12 @@ void UBlackoutGA_Dodge::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 		BO_LOG_GAS(Warning, "GA_Dodge failed: CommitAbility 실패");
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 		return;
+	}
+
+	if (UBlackoutGA_MeleePlayer* MeleeAbility = UBlackoutGA_MeleePlayer::GetActiveMeleeAbilityFromActor(PlayerCharacter))
+	{
+		BO_LOG_GAS(Log, "GA_Dodge cancelling active melee before dodge");
+		MeleeAbility->K2_CancelAbility();
 	}
 	
 	// TODO : 백스텝 임시 항상 FALSE  , 추후 방향입력 X DODGE 실행시 백스텝 추가 예정 
