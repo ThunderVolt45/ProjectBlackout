@@ -35,5 +35,5 @@ void UBOAnimNotifyState_MeleeComboWindow::NotifyEnd(USkeletalMeshComponent* Mesh
 
 FString UBOAnimNotifyState_MeleeComboWindow::GetNotifyName_Implementation() const
 {
-	return TEXT("MeleeComboWindow");
+	return TEXT("MeleeComboWindow_Deprecated");
 }

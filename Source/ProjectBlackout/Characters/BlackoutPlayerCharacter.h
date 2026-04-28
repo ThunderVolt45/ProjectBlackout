@@ -59,6 +59,24 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Blackout|Animation")
 	bool PlayWeaponSwapMontage(FGameplayTag TargetWeaponSlotTag, float PlayRate = 1.f);
 
+	UFUNCTION(NetMulticast, Reliable, Category = "Blackout|Animation")
+	void Multicast_PlayMeleeMontage(UAnimMontage* Montage, FName StartSection = NAME_None, float PlayRate = 1.f);
+
+	UFUNCTION(BlueprintCallable, Category = "Blackout|Animation")
+	bool PlayMeleeMontage(UAnimMontage* Montage, FName StartSection = NAME_None, float PlayRate = 1.f);
+
+	UFUNCTION(NetMulticast, Reliable, Category = "Blackout|Animation")
+	void Multicast_JumpMeleeMontageSection(UAnimMontage* Montage, FName SectionName);
+
+	UFUNCTION(BlueprintCallable, Category = "Blackout|Animation")
+	bool JumpMeleeMontageSection(UAnimMontage* Montage, FName SectionName);
+
+	UFUNCTION(NetMulticast, Reliable, Category = "Blackout|Animation")
+	void Multicast_StopMeleeMontage(UAnimMontage* Montage, float BlendOutTime = 0.1f);
+
+	UFUNCTION(BlueprintCallable, Category = "Blackout|Animation")
+	bool StopMeleeMontage(UAnimMontage* Montage, float BlendOutTime = 0.1f);
+
 	UFUNCTION(BlueprintCallable, Category = "Blackout|Animation")
 	void CommitPendingWeaponSwap();
 

@@ -257,6 +257,142 @@ bool ABlackoutPlayerCharacter::PlayWeaponSwapMontage(FGameplayTag TargetWeaponSl
 	return false;
 }
 
+void ABlackoutPlayerCharacter::Multicast_PlayMeleeMontage_Implementation(UAnimMontage* Montage, FName StartSection, float PlayRate)
+{
+	PlayMeleeMontage(Montage, StartSection, PlayRate);
+}
+
+bool ABlackoutPlayerCharacter::PlayMeleeMontage(UAnimMontage* Montage, FName StartSection, float PlayRate)
+{
+	if (!Montage)
+	{
+		BO_LOG_GAS(Warning, "PlayMeleeMontage failed: Montage가 비어 있음");
+		return false;
+	}
+
+	USkeletalMeshComponent* MeshComponent = GetMesh();
+	if (!MeshComponent)
+	{
+		BO_LOG_GAS(Warning, "PlayMeleeMontage failed: MeshComponent가 비어 있음");
+		return false;
+	}
+
+	UAnimInstance* AnimInstance = MeshComponent->GetAnimInstance();
+	if (!AnimInstance)
+	{
+		BO_LOG_GAS(Warning, "PlayMeleeMontage failed: AnimInstance가 비어 있음");
+		return false;
+	}
+
+	if (AnimInstance->GetCurrentActiveMontage() == Montage && AnimInstance->Montage_IsPlaying(Montage))
+	{
+		const FName CurrentSectionName = AnimInstance->Montage_GetCurrentSection(Montage);
+		if (StartSection == NAME_None || CurrentSectionName == StartSection)
+		{
+			BO_LOG_GAS(Verbose, "PlayMeleeMontage skipped: 이미 같은 근접 몽타주/섹션이 재생 중임");
+			return true;
+		}
+	}
+
+	const float PlayResult = PlayAnimMontage(Montage, PlayRate);
+	if (PlayResult <= 0.f)
+	{
+		BO_LOG_GAS(Warning, "PlayMeleeMontage failed: Montage=%s", *GetNameSafe(Montage));
+		return false;
+	}
+
+	if (StartSection != NAME_None)
+	{
+		if (Montage->GetSectionIndex(StartSection) == INDEX_NONE)
+		{
+			BO_LOG_GAS(Warning,
+				"PlayMeleeMontage failed: StartSection=%s 이(가) Montage=%s 에 없음",
+				*StartSection.ToString(),
+				*GetNameSafe(Montage));
+			return false;
+		}
+
+		AnimInstance->Montage_JumpToSection(StartSection, Montage);
+	}
+
+	return true;
+}
+
+void ABlackoutPlayerCharacter::Multicast_JumpMeleeMontageSection_Implementation(UAnimMontage* Montage, FName SectionName)
+{
+	JumpMeleeMontageSection(Montage, SectionName);
+}
+
+bool ABlackoutPlayerCharacter::JumpMeleeMontageSection(UAnimMontage* Montage, FName SectionName)
+{
+	if (!Montage || SectionName == NAME_None)
+	{
+		return false;
+	}
+
+	USkeletalMeshComponent* MeshComponent = GetMesh();
+	if (!MeshComponent)
+	{
+		return false;
+	}
+
+	UAnimInstance* AnimInstance = MeshComponent->GetAnimInstance();
+	if (!AnimInstance)
+	{
+		return false;
+	}
+
+	if (AnimInstance->GetCurrentActiveMontage() != Montage || !AnimInstance->Montage_IsPlaying(Montage))
+	{
+		return false;
+	}
+
+	if (Montage->GetSectionIndex(SectionName) == INDEX_NONE)
+	{
+		BO_LOG_GAS(Warning,
+			"JumpMeleeMontageSection failed: Section=%s 이(가) Montage=%s 에 없음",
+			*SectionName.ToString(),
+			*GetNameSafe(Montage));
+		return false;
+	}
+
+	if (AnimInstance->Montage_GetCurrentSection(Montage) == SectionName)
+	{
+		return true;
+	}
+
+	AnimInstance->Montage_JumpToSection(SectionName, Montage);
+	return AnimInstance->Montage_GetCurrentSection(Montage) == SectionName;
+}
+
+void ABlackoutPlayerCharacter::Multicast_StopMeleeMontage_Implementation(UAnimMontage* Montage, float BlendOutTime)
+{
+	StopMeleeMontage(Montage, BlendOutTime);
+}
+
+bool ABlackoutPlayerCharacter::StopMeleeMontage(UAnimMontage* Montage, float BlendOutTime)
+{
+	if (!Montage)
+	{
+		return false;
+	}
+
+	USkeletalMeshComponent* MeshComponent = GetMesh();
+	if (!MeshComponent)
+	{
+		return false;
+	}
+
+	UAnimInstance* AnimInstance = MeshComponent->GetAnimInstance();
+	if (!AnimInstance || !AnimInstance->Montage_IsPlaying(Montage))
+	{
+		return false;
+	}
+
+	AnimInstance->Montage_Stop(BlendOutTime, Montage);
+	return true;
+}
+
 void ABlackoutPlayerCharacter::CommitPendingWeaponSwap()
 {
 	if (CombatComponent)

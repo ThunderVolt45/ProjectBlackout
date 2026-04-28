@@ -14,6 +14,7 @@
 UBlackoutGA_MeleePlayer::UBlackoutGA_MeleePlayer()
 {
 	InputID = EBlackoutAbilityInputID::Melee;
+	bReplicateInputDirectly = true;
 	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::LocalPredicted;
 
@@ -56,29 +57,81 @@ void UBlackoutGA_MeleePlayer::ActivateAbility(const FGameplayAbilitySpecHandle H
 	ResetComboState();
 	CurrentComboIndex = 0;
 
-	UAnimInstance* AnimInstance = GetAvatarAnimInstance();
-	if (!AnimInstance || !MeleeMontage)
+	if (!MeleeMontage)
 	{
-		BO_LOG_GAS(Warning, "GA_MeleePlayer failed: AnimInstance 또는 MeleeMontage가 비어 있음");
+		BO_LOG_GAS(Warning, "GA_MeleePlayer failed: MeleeMontage가 비어 있음");
 		HandleMeleeHitNotify();
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
 		return;
 	}
 
-	const float PlayResult = AnimInstance->Montage_Play(MeleeMontage);
-	if (PlayResult <= 0.0f)
+	const FName StartSectionName =
+		(ComboSectionNames.Num() > 0 && ComboSectionNames[0] != NAME_None)
+			? ComboSectionNames[0]
+			: NAME_None;
+
+	bool bMontageStarted = false;
+	if (ABlackoutPlayerCharacter* PlayerCharacter = Cast<ABlackoutPlayerCharacter>(ActorInfo->AvatarActor.Get()))
+	{
+		if (StartSectionName != NAME_None && MeleeMontage->GetSectionIndex(StartSectionName) == INDEX_NONE)
+		{
+			BO_LOG_GAS(Warning,
+				"GA_MeleePlayer failed: 첫 콤보 섹션 %s 이(가) 몽타주 %s 에 없음",
+				*StartSectionName.ToString(),
+				*GetNameSafe(MeleeMontage));
+			EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
+			return;
+		}
+
+		if (PlayerCharacter->HasAuthority())
+		{
+			PlayerCharacter->Multicast_PlayMeleeMontage(MeleeMontage, StartSectionName, 1.f);
+			bMontageStarted = true;
+		}
+		else if (PlayerCharacter->IsLocallyControlled())
+		{
+			bMontageStarted = PlayerCharacter->PlayMeleeMontage(MeleeMontage, StartSectionName, 1.f);
+		}
+		else
+		{
+			bMontageStarted = PlayerCharacter->PlayMeleeMontage(MeleeMontage, StartSectionName, 1.f);
+		}
+	}
+	else
+	{
+		UAnimInstance* AnimInstance = GetAvatarAnimInstance();
+		if (!AnimInstance)
+		{
+			BO_LOG_GAS(Warning, "GA_MeleePlayer failed: AnimInstance가 비어 있음");
+			EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
+			return;
+		}
+
+		const float PlayResult = AnimInstance->Montage_Play(MeleeMontage);
+		if (PlayResult > 0.0f && StartSectionName != NAME_None)
+		{
+			AnimInstance->Montage_JumpToSection(StartSectionName, MeleeMontage);
+		}
+
+		bMontageStarted = PlayResult > 0.0f;
+	}
+
+	if (!bMontageStarted)
 	{
 		BO_LOG_GAS(Warning, "GA_MeleePlayer failed: MeleeMontage 재생 실패");
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 		return;
 	}
 
-	ActiveAnimInstance = AnimInstance;
-
-	if (ComboSectionNames.Num() > 0 && ComboSectionNames[0] != NAME_None)
+	UAnimInstance* AnimInstance = GetAvatarAnimInstance();
+	if (!AnimInstance)
 	{
-		AnimInstance->Montage_JumpToSection(ComboSectionNames[0], MeleeMontage);
+		BO_LOG_GAS(Warning, "GA_MeleePlayer failed: 재생 후 AnimInstance가 비어 있음");
+		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
+		return;
 	}
+
+	ActiveAnimInstance = AnimInstance;
 
 	FOnMontageEnded MontageEndedDelegate;
 	MontageEndedDelegate.BindUObject(this, &UBlackoutGA_MeleePlayer::OnMeleeMontageEnded);
@@ -103,6 +156,11 @@ void UBlackoutGA_MeleePlayer::EndAbility(const FGameplayAbilitySpecHandle Handle
 	{
 		if (ABlackoutPlayerCharacter* PlayerCharacter = Cast<ABlackoutPlayerCharacter>(ActorInfo->AvatarActor.Get()))
 		{
+			if (bWasCancelled && PlayerCharacter->HasAuthority())
+			{
+				PlayerCharacter->Multicast_StopMeleeMontage(MeleeMontage, 0.1f);
+			}
+
 			if (UBlackoutCombatComponent* CombatComponent = PlayerCharacter->GetCombatComponent())
 			{
 				CombatComponent->EndMeleeWeaponAttachmentOverride();
@@ -175,6 +233,12 @@ void UBlackoutGA_MeleePlayer::HandleMeleeHitNotify()
 
 void UBlackoutGA_MeleePlayer::HandleComboWindowOpened()
 {
+	if (bComboWindowOpen)
+	{
+		BO_LOG_GAS(Verbose, "GA_MeleePlayer combo window open ignored: 이미 입력 윈도우가 열려 있음");
+		return;
+	}
+
 	bComboWindowOpen = true;
 	bComboInputQueued = false;
 
@@ -192,9 +256,15 @@ void UBlackoutGA_MeleePlayer::HandleComboWindowClosed()
 
 	if (bComboInputQueued)
 	{
-		JumpToNextComboSection();
+		if (!JumpToNextComboSection())
+		{
+			BO_LOG_GAS(Warning, "GA_MeleePlayer combo jump failed: CurrentComboIndex=%d", CurrentComboIndex);
+		}
+
 		return;
 	}
+
+	bComboInputQueued = false;
 
 	BO_LOG_GAS(Log, "GA_MeleePlayer combo window closed without queued input");
 }
@@ -217,6 +287,7 @@ bool UBlackoutGA_MeleePlayer::JumpToNextComboSection()
 {
 	if (!ActiveAnimInstance || !MeleeMontage)
 	{
+		BO_LOG_GAS(Warning, "GA_MeleePlayer failed to jump combo section: AnimInstance 또는 MeleeMontage가 유효하지 않음");
 		return false;
 	}
 
@@ -224,17 +295,61 @@ bool UBlackoutGA_MeleePlayer::JumpToNextComboSection()
 	if (!ComboSectionNames.IsValidIndex(NextComboIndex) || ComboSectionNames[NextComboIndex] == NAME_None)
 	{
 		bComboInputQueued = false;
+		BO_LOG_GAS(Warning,
+			"GA_MeleePlayer failed to jump combo section: NextComboIndex=%d 에 유효한 섹션 이름이 없음",
+			NextComboIndex);
+		return false;
+	}
+
+	const FName TargetSectionName = ComboSectionNames[NextComboIndex];
+	if (MeleeMontage->GetSectionIndex(TargetSectionName) == INDEX_NONE)
+	{
+		bComboInputQueued = false;
+		BO_LOG_GAS(Warning,
+			"GA_MeleePlayer failed to jump combo section: 섹션 %s 이(가) 몽타주 %s 에 없음",
+			*TargetSectionName.ToString(),
+			*GetNameSafe(MeleeMontage));
+		return false;
+	}
+
+	if (!ActiveAnimInstance->Montage_IsPlaying(MeleeMontage))
+	{
+		bComboInputQueued = false;
+		BO_LOG_GAS(Warning,
+			"GA_MeleePlayer failed to jump combo section: 몽타주가 이미 재생 중이 아님 (TargetSection=%s)",
+			*TargetSectionName.ToString());
+		return false;
+	}
+
+	const FName PreviousSectionName = ActiveAnimInstance->Montage_GetCurrentSection(MeleeMontage);
+	bComboInputQueued = false;
+	ActiveAnimInstance->Montage_JumpToSection(TargetSectionName, MeleeMontage);
+
+	const FName CurrentSectionName = ActiveAnimInstance->Montage_GetCurrentSection(MeleeMontage);
+	if (CurrentSectionName != TargetSectionName)
+	{
+		BO_LOG_GAS(Warning,
+			"GA_MeleePlayer failed to jump combo section: Previous=%s Target=%s Current=%s",
+			*PreviousSectionName.ToString(),
+			*TargetSectionName.ToString(),
+			*CurrentSectionName.ToString());
 		return false;
 	}
 
 	CurrentComboIndex = NextComboIndex;
-	bComboInputQueued = false;
-	ActiveAnimInstance->Montage_JumpToSection(ComboSectionNames[CurrentComboIndex], MeleeMontage);
+
+	if (ABlackoutPlayerCharacter* PlayerCharacter = CurrentActorInfo ? Cast<ABlackoutPlayerCharacter>(CurrentActorInfo->AvatarActor.Get()) : nullptr)
+	{
+		if (PlayerCharacter->HasAuthority())
+		{
+			PlayerCharacter->Multicast_JumpMeleeMontageSection(MeleeMontage, TargetSectionName);
+		}
+	}
 
 	BO_LOG_GAS(Log,
 		"GA_MeleePlayer jumped to combo section: Index=%d Section=%s",
 		CurrentComboIndex,
-		*ComboSectionNames[CurrentComboIndex].ToString());
+		*TargetSectionName.ToString());
 
 	return true;
 }
