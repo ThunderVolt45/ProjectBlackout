@@ -8,7 +8,7 @@ classDiagram
 
     AActor <|-- ABOProjectile
     ABOProjectile <|-- ABOMeridianGrenadeProjectile
-    ABOFirearm <|-- ABOMeridianLauncher
+    ABOFirearm <|-- ABlackoutMeridian
 
     IBlackoutPoolableInterface <|.. ABOProjectile
 
@@ -18,8 +18,7 @@ classDiagram
         +SpawnProjectile(const FVector& Direction, const FGameplayEffectSpecHandle& DamageSpecHandle) ABOProjectile*
     }
 
-    class ABOMeridianLauncher {
-        <<Future>>
+    class ABlackoutMeridian {
         +Fire(const FVector& Direction, const FGameplayEffectSpecHandle& DamageSpecHandle) FHitResult
     }
 
@@ -59,7 +58,7 @@ classDiagram
         +GameplayCueTag : GameplayCue.Weapon.MeridianGrenade.Explosion
     }
 
-    ABOMeridianLauncher ..> ABOMeridianGrenadeProjectile : Spawn
+    ABlackoutMeridian ..> ABOMeridianGrenadeProjectile : Spawn
     ABOMeridianGrenadeProjectile ..> UStaticMeshComponent : 표시 메시
     ABOMeridianGrenadeProjectile ..> UProjectileMovementComponent : 중력/바운스
     ABOMeridianGrenadeProjectile ..> IBlackoutDamageableInterface : 충격 피해
@@ -71,11 +70,11 @@ classDiagram
 
 | 요구사항 | 설계 |
 |---|---|
-| 발사체 메시 설정, 기본값은 구 | `ProjectileMesh`는 블루프린트에서 메시 교체 가능. C++ 기본 생성자에서 엔진 기본 구 메시를 로드하거나, 메시가 없으면 `USphereComponent` 충돌체만으로 동작 |
+| 발사체 메시 설정, 기본값은 구 | `ProjectileMesh`는 블루프린트에서 메시 교체 가능. C++ 기본 생성자에서 엔진 기본 구 메시를 로드하거나, 메시가 없으면 `USphereComponent` 충돌체만으로 동작. 메시 표시 크기(`MeshScale`)와 충돌 반경(`CollisionRadius`)은 별도로 조절 |
 | 중력 영향 및 물리적 튕김 | `UProjectileMovementComponent`의 `ProjectileGravityScale > 0`, `bShouldBounce = true`, `Bounciness` 사용. 이동 주체는 `Collision`이며 `ProjectileMesh`는 표시용으로 부착 |
 | 5m 비행 후 신관 활성화 | `ArmDistance = 500.0f`(cm). `LaunchLocation`부터 현재 위치까지의 거리로 `bFuseArmed` 전환 |
 | 신관 비활성 충돌 | `ApplyImpactDamage()`로 낮은 충격 피해만 적용하고 풀에 반환하지 않음. `Movement` 바운스는 유지 |
-| 신관 활성 충돌 | 충격 피해는 생략하고 `Explode()`에서 반경 피해 적용, `ExplosionCueTag`로 GCN 실행, 이후 풀 반환 |
+| 신관 활성 충돌 | 충격 피해는 생략하고 `Explode()`에서 반경 피해 적용, 선택적으로 DebugSphere 표시, `ExplosionCueTag`로 GCN 실행, 이후 즉시 풀 반환 |
 
 ## 구현 노트
 
@@ -83,4 +82,4 @@ classDiagram
 - 기존 `ABOProjectile::OnHit`가 즉시 피해 후 풀 반환하는 구조이므로, 유탄 구현 시 `OnHit`는 `virtual`로 확장하거나 유탄 전용 히트 핸들러를 바인딩해야 합니다.
 - 신관 거리 판정은 네트워크 권한 서버에서 확정하고, 시각 효과는 GameplayCue로 복제 흐름에 태웁니다. GCN은 C++ 클래스가 아니라 `GameplayCue.Weapon.MeridianGrenade.Explosion` 태그를 받는 블루프린트 `GameplayCueNotify` 에셋으로 제작합니다.
 - 폭발 반경 피해는 기존 `FGameplayEffectSpecHandle` 기반 피해 전달 방식을 따르되, 다중 대상 처리는 `OverlapMultiByChannel` 또는 별도 전투 유틸로 분리할 수 있습니다.
-- `ABOMeridianLauncher`는 무기 메시가 준비된 뒤 추가할 예정이며, 지금 단계에서는 `ABOFirearm::ProjectileClass`에 유탄 클래스를 지정해 테스트할 수 있습니다.
+- `ABlackoutMeridian`은 무기 메시가 준비되기 전에도 `ABOFirearm::ProjectileClass` 기본값으로 유탄 클래스를 지정해 테스트할 수 있습니다.

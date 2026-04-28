@@ -11,6 +11,7 @@
 #include "Engine/StaticMesh.h"
 #include "Engine/OverlapResult.h"
 #include "Engine/World.h"
+#include "DrawDebugHelpers.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "GameplayCueManager.h"
@@ -25,7 +26,7 @@ ABOMeridianGrenadeProjectile::ABOMeridianGrenadeProjectile()
 	PrimaryActorTick.bCanEverTick = true;
 	bReplicates = true;
 
-	Collision->InitSphereRadius(ProjectileRadius);
+	Collision->InitSphereRadius(CollisionRadius);
 	Collision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	Collision->SetCollisionResponseToAllChannels(ECR_Block);
 	Collision->SetNotifyRigidBodyCollision(true);
@@ -113,13 +114,12 @@ void ABOMeridianGrenadeProjectile::ApplyProjectileSettingsToComponents()
 {
 	if (Collision)
 	{
-		Collision->SetSphereRadius(FMath::Max(ProjectileRadius, 0.0f), true);
+		Collision->SetSphereRadius(FMath::Max(CollisionRadius, 0.0f), true);
 	}
 
 	if (ProjectileMesh)
 	{
-		const float MeshScale = FMath::Max(ProjectileRadius, 0.0f) / 50.0f;
-		ProjectileMesh->SetRelativeScale3D(FVector(MeshScale));
+		ProjectileMesh->SetRelativeScale3D(FVector(FMath::Max(MeshScale, 0.0f)));
 	}
 
 	if (Movement)
@@ -244,6 +244,17 @@ void ABOMeridianGrenadeProjectile::Explode(const FHitResult& Hit)
 
 	const FVector ExplosionOrigin = Hit.bBlockingHit ? FVector(Hit.ImpactPoint) : GetActorLocation();
 	ApplyExplosionDamage(ExplosionOrigin);
+	if (bDrawDebugExplosionRadius && GetWorld())
+	{
+		DrawDebugSphere(
+			GetWorld(),
+			ExplosionOrigin,
+			SplashRadius,
+			DebugExplosionRadiusSegments,
+			FColor::Orange,
+			false,
+			DebugExplosionRadiusDuration);
+	}
 	ExecuteExplosionCue(Hit);
 	ReturnToPool();
 }

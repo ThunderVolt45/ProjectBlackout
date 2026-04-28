@@ -20,6 +20,13 @@ class PROJECTBLACKOUT_API ABOMeridianGrenadeProjectile : public ABOProjectile
 public:
 	ABOMeridianGrenadeProjectile();
 
+	virtual void OnConstruction(const FTransform& Transform) override;
+#if WITH_EDITOR
+	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
+#endif
+
+	virtual void Tick(float DeltaSeconds) override;
+
 	virtual void OnSpawnFromPool_Implementation() override;
 	virtual void OnReturnToPool_Implementation() override;
 	virtual void InitFromSpec(const FGameplayEffectSpecHandle& InDamageSpec, float Radius) override;
@@ -32,13 +39,7 @@ public:
 	bool IsFuseArmed() const { return bFuseArmed; }
 
 protected:
-	virtual void OnConstruction(const FTransform& Transform) override;
-	virtual void Tick(float DeltaSeconds) override;
 	virtual void OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit) override;
-
-#if WITH_EDITOR
-	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
-#endif
 
 	void ApplyProjectileSettingsToComponents();
 	void ResetGrenadeState();
@@ -59,7 +60,10 @@ protected:
 	float ImpactDamageMultiplier = 0.15f;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Blackout|Combat", meta = (ClampMin = "0.0", Units = "cm"))
-	float ProjectileRadius = 15.0f;
+	float CollisionRadius = 15.0f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Blackout|Visual", meta = (ClampMin = "0.0"))
+	float MeshScale = 1.0f;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Blackout|Combat")
 	float GravityScale = 1.0f;
@@ -72,6 +76,15 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Blackout|Combat")
 	FGameplayTag ExplosionCueTag;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Blackout|Debug")
+	bool bDrawDebugExplosionRadius = false;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Blackout|Debug", meta = (EditCondition = "bDrawDebugExplosionRadius", ClampMin = "0.0"))
+	float DebugExplosionRadiusDuration = 1.5f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Blackout|Debug", meta = (EditCondition = "bDrawDebugExplosionRadius", ClampMin = "4"))
+	int32 DebugExplosionRadiusSegments = 24;
 
 	FGameplayEffectSpecHandle ExplosionDamageSpec;
 	FVector PreviousLocation = FVector::ZeroVector;
