@@ -77,3 +77,18 @@ bool ABOWeaponBase::AttachToOwner(FName SocketName)
 	AttachToComponent(CharacterMesh, FAttachmentTransformRules::SnapToTargetNotIncludingScale, SocketName);
 	return true;
 }
+
+bool ABOWeaponBase::HasLeftHandIKTarget() const
+{
+	return WeaponMesh && !LeftHandIKSocketName.IsNone() && WeaponMesh->DoesSocketExist(LeftHandIKSocketName);
+}
+
+FTransform ABOWeaponBase::GetLeftHandIKTransform() const
+{
+	if (!HasLeftHandIKTarget())
+	{
+		return FTransform::Identity;
+	}
+
+	return WeaponMesh->GetSocketTransform(LeftHandIKSocketName);
+}

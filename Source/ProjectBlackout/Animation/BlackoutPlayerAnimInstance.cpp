@@ -1,7 +1,9 @@
 #include "Animation/BlackoutPlayerAnimInstance.h"
 #include "Characters/BlackoutPlayerCharacter.h"
 #include "AbilitySystemComponent.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "Combat/Components/BlackoutCombatComponent.h"
+#include "Combat/Weapons/BOWeaponBase.h"
 #include "GameplayTags/BlackoutGameplayTags.h"
 #include "Kismet/KismetMathLibrary.h"
 
@@ -24,11 +26,39 @@ void UBlackoutPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 
 	// GAS 태그 상태 업데이트
 	bIsTwoHanded = false;
+	bHasLeftHandIKTarget = false;
+	LeftHandIKLocation = FVector::ZeroVector;
+	LeftHandIKRotation = FRotator::ZeroRotator;
 
 	if (const UBlackoutCombatComponent* CombatComponent = PlayerCharacter->GetCombatComponent())
 	{
 		bIsAiming = CombatComponent->IsAiming();
-		bIsTwoHanded = CombatComponent->GetEquippedWeaponSlotTag() == BlackoutGameplayTags::Weapon_Primary;
+		const FGameplayTag EquippedWeaponSlotTag = CombatComponent->GetEquippedWeaponSlotTag();
+		bIsTwoHanded = EquippedWeaponSlotTag == BlackoutGameplayTags::Weapon_Primary;
+
+		const ABOWeaponBase* EquippedWeapon = CombatComponent->GetEquippedWeapon();
+		USkeletalMeshComponent* CharacterMesh = PlayerCharacter->GetMesh();
+		const bool bWeaponHasLeftHandIKTarget = EquippedWeapon && EquippedWeapon->HasLeftHandIKTarget();
+
+		if (bWeaponHasLeftHandIKTarget && CharacterMesh)
+		{
+			const FTransform LeftHandIKWorldTransform = EquippedWeapon->GetLeftHandIKTransform();
+			if (CharacterMesh->GetBoneIndex(LeftHandIKReferenceBoneName) != INDEX_NONE)
+			{
+				const FTransform ReferenceBoneWorldTransform = CharacterMesh->GetSocketTransform(LeftHandIKReferenceBoneName, RTS_World);
+				CharacterMesh->TransformToBoneSpace(
+					LeftHandIKReferenceBoneName,
+					LeftHandIKWorldTransform.GetLocation(),
+					LeftHandIKWorldTransform.Rotator(),
+					LeftHandIKLocation,
+					LeftHandIKRotation);
+
+				const FQuat LeftHandIKRelativeRotation = ReferenceBoneWorldTransform.GetRotation().Inverse() * LeftHandIKWorldTransform.GetRotation();
+				LeftHandIKRotation = LeftHandIKRelativeRotation.Rotator();
+
+				bHasLeftHandIKTarget = true;
+			}
+		}
 	}
 
 	if (UAbilitySystemComponent* ASC = PlayerCharacter->GetAbilitySystemComponent())
