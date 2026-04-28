@@ -163,7 +163,6 @@ void UBlackoutGA_MeleePlayer::EndAbility(const FGameplayAbilitySpecHandle Handle
 
 			if (UBlackoutCombatComponent* CombatComponent = PlayerCharacter->GetCombatComponent())
 			{
-				CombatComponent->EndMeleeHitWindow();
 				CombatComponent->EndMeleeWeaponAttachmentOverride();
 			}
 		}
@@ -228,31 +227,7 @@ void UBlackoutGA_MeleePlayer::HandleMeleeHitNotify()
 	const ABlackoutPlayerCharacter* PlayerCharacter = CurrentActorInfo ? Cast<ABlackoutPlayerCharacter>(CurrentActorInfo->AvatarActor.Get()) : nullptr;
 	if (UBlackoutCombatComponent* CombatComponent = PlayerCharacter ? PlayerCharacter->GetCombatComponent() : nullptr)
 	{
-		if (CombatComponent->IsMeleeHitWindowActive())
-		{
-			BO_LOG_GAS(Verbose, "GA_MeleePlayer hit notify ignored: 활성 히트 윈도우가 이미 데미지를 처리 중");
-			return;
-		}
-
-		CombatComponent->PerformMeleeHit(DamageEffectClass, GetAbilityLevel());
-	}
-}
-
-void UBlackoutGA_MeleePlayer::HandleMeleeCollisionEnabled()
-{
-	const ABlackoutPlayerCharacter* PlayerCharacter = CurrentActorInfo ? Cast<ABlackoutPlayerCharacter>(CurrentActorInfo->AvatarActor.Get()) : nullptr;
-	if (UBlackoutCombatComponent* CombatComponent = PlayerCharacter ? PlayerCharacter->GetCombatComponent() : nullptr)
-	{
-		CombatComponent->BeginMeleeHitWindow(DamageEffectClass, GetAbilityLevel());
-	}
-}
-
-void UBlackoutGA_MeleePlayer::HandleMeleeCollisionDisabled()
-{
-	const ABlackoutPlayerCharacter* PlayerCharacter = CurrentActorInfo ? Cast<ABlackoutPlayerCharacter>(CurrentActorInfo->AvatarActor.Get()) : nullptr;
-	if (UBlackoutCombatComponent* CombatComponent = PlayerCharacter ? PlayerCharacter->GetCombatComponent() : nullptr)
-	{
-		CombatComponent->EndMeleeHitWindow();
+		CombatComponent->PerformMeleeHit();
 	}
 }
 

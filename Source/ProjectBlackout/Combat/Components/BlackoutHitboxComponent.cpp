@@ -10,8 +10,7 @@ UBlackoutHitboxComponent::UBlackoutHitboxComponent()
 	UBoxComponent::SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	UBoxComponent::SetCollisionResponseToAllChannels(ECR_Ignore);
 	UBoxComponent::SetCollisionResponseToChannel(BlackoutCollisionChannels::WeaponTrace, ECR_Block);
-	UBoxComponent::SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Overlap);
-	UBoxComponent::SetGenerateOverlapEvents(true);
+	UBoxComponent::SetGenerateOverlapEvents(false);
 }
 
 void UBlackoutHitboxComponent::BeginPlay()
@@ -21,8 +20,7 @@ void UBlackoutHitboxComponent::BeginPlay()
 	UBoxComponent::SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	UBoxComponent::SetCollisionResponseToAllChannels(ECR_Ignore);
 	UBoxComponent::SetCollisionResponseToChannel(BlackoutCollisionChannels::WeaponTrace, ECR_Block);
-	UBoxComponent::SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Overlap);
-	UBoxComponent::SetGenerateOverlapEvents(true);
+	UBoxComponent::SetGenerateOverlapEvents(false);
 }
 
 void UBlackoutHitboxComponent::ReceiveDamageSpec(const FGameplayEffectSpecHandle& SpecHandle)

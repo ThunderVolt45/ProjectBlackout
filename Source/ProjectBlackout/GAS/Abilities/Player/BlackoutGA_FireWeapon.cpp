@@ -97,16 +97,7 @@ FGameplayEffectSpecHandle UBlackoutGA_FireWeapon::BuildDamageSpec(const ABOFirea
 		SpecHandle = MakeOutgoingGameplayEffectSpec(DamageEffectClass, GetAbilityLevel());
 		if (SpecHandle.IsValid())
 		{
-			const FGameplayTag DamageDataTag = Firearm->GetDamageDataTag().IsValid()
-				? Firearm->GetDamageDataTag()
-				: BlackoutGameplayTags::Data_Damage;
-
-			SpecHandle.Data->SetSetByCallerMagnitude(DamageDataTag, Firearm->GetBaseDamage());
-
-			if (Firearm->GetDamageTypeTag().IsValid())
-			{
-				SpecHandle.Data->DynamicAssetTags.AddTag(Firearm->GetDamageTypeTag());
-			}
+			SpecHandle.Data->SetSetByCallerMagnitude(BlackoutGameplayTags::Data_Damage, Firearm->GetBaseDamage());
 		}
 	}
 	else
