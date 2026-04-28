@@ -32,6 +32,22 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Blackout|Animation")
 	bool bIsTwoHanded;
 
+	/** 현재 장착 무기가 왼손 IK 타겟을 제공하는지 여부 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Blackout|Animation")
+	bool bHasLeftHandIKTarget;
+
+	/** 오른손 기준 Bone Space로 변환된 왼손 IK 위치 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Blackout|Animation")
+	FVector LeftHandIKLocation;
+
+	/** 오른손 기준 Bone Space로 변환된 왼손 IK 회전 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Blackout|Animation")
+	FRotator LeftHandIKRotation;
+
+	/** 왼손 IK 위치를 변환할 기준 본 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Blackout|Animation")
+	FName LeftHandIKReferenceBoneName = TEXT("hand_r");
+
 	/** 전력질주 여부 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Blackout|Animation")
 	bool bIsSprinting;

@@ -38,6 +38,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Blackout|Combat")
 	bool AttachToOwner(FName SocketName);
 
+	UFUNCTION(BlueprintPure, Category = "Blackout|Animation")
+	bool HasLeftHandIKTarget() const;
+
+	UFUNCTION(BlueprintPure, Category = "Blackout|Animation")
+	FTransform GetLeftHandIKTransform() const;
+
 protected:
 	virtual void BeginPlay() override;
 	void ApplyCommonStats(const FBlackoutWeaponStat& WeaponStats);
@@ -50,4 +56,8 @@ protected:
 
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "Blackout|Combat")
 	FBlackoutWeaponStat CachedStats;
+
+	/** 왼손 IK가 고정될 무기 메시 소켓 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Blackout|Animation")
+	FName LeftHandIKSocketName = NAME_None;
 };
