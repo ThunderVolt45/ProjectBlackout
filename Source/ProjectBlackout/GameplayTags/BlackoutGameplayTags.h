@@ -42,6 +42,8 @@ namespace BlackoutGameplayTags
 	// ─── Weapon Slot ───────────────────────────────────────────────────────────
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Weapon_Primary);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Weapon_Secondary);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Weapon_Melee_Sword);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Weapon_Melee_Hammer);
 
 	// ─── Lobby ─────────────────────────────────────────────────────────────────
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(LobbyTag_InfiniteAmmo);
