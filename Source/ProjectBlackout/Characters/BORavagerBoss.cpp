@@ -16,7 +16,15 @@ ABORavagerBoss::ABORavagerBoss()
 
 APawn* ABORavagerBoss::GetHighestAggroTarget() const
 {
-	return AggroComp ? AggroComp->GetHighestAggroTarget() : nullptr;
+	//return AggroComp ? AggroComp->GetHighestAggroTarget() : nullptr;
+	if (UWorld* World = GetWorld())
+	{
+		if (APlayerController* PC = World->GetFirstPlayerController())
+		{
+			return PC->GetPawn();
+		}
+	}
+	return nullptr;
 }
 
 void ABORavagerBoss::AddThreat(APawn* Source, float Amount)

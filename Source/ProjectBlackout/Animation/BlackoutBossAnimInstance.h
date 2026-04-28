@@ -45,26 +45,13 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category = "Blackout|Animation|BlendSpace")
 	float AimDirection;
 
-	/** 회전 중인지 여부 — ABP 스테이트 전이 조건 */
-	UPROPERTY(BlueprintReadOnly, Category = "Blackout|Animation|BlendSpace")
-	float CurrentAngle;
-	
-	UPROPERTY(BlueprintReadOnly, Category = "Blackout|Animation|BlendSpace")
-	float TargetAngle;
-
-	UPROPERTY(EditAnywhere)
-	UAnimMontage* TurnLeftMontage;
-
-	UPROPERTY(EditAnywhere)
-	UAnimMontage* TurnRightMontage;
 
 public:
 	UPROPERTY(BlueprintReadOnly)
 	bool bIsTurning = false;
 
 	float DesiredYaw = 0.f;
-	
-	void StartTurn(float AngleDelta);
+
 	void OnTurnMontageEnded(UAnimMontage* Montage, bool bInterrupted);
 
 	

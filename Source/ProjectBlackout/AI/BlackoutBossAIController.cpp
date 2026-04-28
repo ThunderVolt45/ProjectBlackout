@@ -101,16 +101,16 @@ void ABlackoutBossAIController::InitPerception()
 void ABlackoutBossAIController::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
-	if (BTRunner->CheckingActor)
-	{
-	}
+	// if (BTRunner->CheckingActor)
+	// {
+	// }
 }
 
 void ABlackoutBossAIController::OnTargetPerceived(AActor* Actor, FAIStimulus Stimulus)
 {
-	if (!Stimulus.WasSuccessfullySensed()) return;
-	if (APawn* TargetPawn = Cast<APawn>(Actor))
-	{
-		WriteTargetToBlackboard(TargetPawn);
-	}
+	// if (!Stimulus.WasSuccessfullySensed()) return;
+	// if (APawn* TargetPawn = Cast<APawn>(Actor))
+	// {
+	// 	WriteTargetToBlackboard(TargetPawn);
+	// }
 }
