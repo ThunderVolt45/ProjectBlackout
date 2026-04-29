@@ -3,6 +3,7 @@
 #include "AbilitySystemComponent.h"
 #include "Characters/BlackoutPlayerCharacter.h"
 #include "Combat/Components/BlackoutCombatComponent.h"
+#include "Combat/Weapons/BOFirearm.h"
 #include "Combat/Weapons/BOWeaponBase.h"
 #include "Core/BlackoutLog.h"
 #include "Framework/BlackoutPlayerController.h"
@@ -78,12 +79,14 @@ void UBlackoutHUDWidgetController::BroadcastInitialValues()
 	BroadcastAmmo();
 	BroadcastEquippedWeapon();
 	BroadcastAiming();
+	BroadcastWeaponAmmoDisplay(false);
 }
 
 void UBlackoutHUDWidgetController::HandleEquippedWeaponChanged(ABOWeaponBase* EquippedWeapon, FGameplayTag WeaponSlotTag)
 {
 	OnEquippedWeaponChanged.Broadcast(EquippedWeapon, WeaponSlotTag);
 	BroadcastAmmo();
+	BroadcastWeaponAmmoDisplay(true);
 }
 
 void UBlackoutHUDWidgetController::HandleAimingChanged(bool bIsAiming)
@@ -203,6 +206,68 @@ void UBlackoutHUDWidgetController::BroadcastAiming() const
 	OnAimingChanged.Broadcast(BlackoutCombatComponent ? BlackoutCombatComponent->IsAiming() : false);
 }
 
+void UBlackoutHUDWidgetController::BroadcastWeaponAmmoDisplay(bool bPlaySwapAnimation) const
+{
+	const UBlackoutCombatComponent* BlackoutCombatComponent = CombatComponent.Get();
+	if (!BlackoutCombatComponent)
+	{
+		OnWeaponAmmoDisplayChanged.Broadcast(
+			FBlackoutWeaponAmmoSlotData(),
+			FBlackoutWeaponAmmoSlotData(),
+			false);
+		return;
+	}
+
+	const FGameplayTag EquippedWeaponSlotTag = BlackoutCombatComponent->GetEquippedWeaponSlotTag();
+	const FBlackoutWeaponAmmoSlotData PrimarySlotData = MakeWeaponAmmoSlotData(
+		BlackoutCombatComponent->GetPrimaryWeapon(),
+		BlackoutGameplayTags::Weapon_Primary,
+		EquippedWeaponSlotTag.MatchesTagExact(BlackoutGameplayTags::Weapon_Primary));
+	const FBlackoutWeaponAmmoSlotData SecondarySlotData = MakeWeaponAmmoSlotData(
+		BlackoutCombatComponent->GetSecondaryWeapon(),
+		BlackoutGameplayTags::Weapon_Secondary,
+		EquippedWeaponSlotTag.MatchesTagExact(BlackoutGameplayTags::Weapon_Secondary));
+
+	OnWeaponAmmoDisplayChanged.Broadcast(PrimarySlotData, SecondarySlotData, bPlaySwapAnimation);
+}
+
+FBlackoutWeaponAmmoSlotData UBlackoutHUDWidgetController::MakeWeaponAmmoSlotData(ABOWeaponBase* Weapon, FGameplayTag WeaponSlotTag, bool bIsEquipped) const
+{
+	FBlackoutWeaponAmmoSlotData SlotData;
+	SlotData.Weapon = Weapon;
+	SlotData.WeaponIcon = Weapon ? Weapon->GetWeaponIcon() : nullptr;
+	SlotData.WeaponSlotTag = WeaponSlotTag;
+	SlotData.bIsEquipped = bIsEquipped;
+	SlotData.bIsValid = IsValid(Weapon);
+
+	if (!SlotData.bIsValid)
+	{
+		return SlotData;
+	}
+
+	const bool bIsPrimary = WeaponSlotTag.MatchesTagExact(BlackoutGameplayTags::Weapon_Primary);
+	const bool bIsSecondary = WeaponSlotTag.MatchesTagExact(BlackoutGameplayTags::Weapon_Secondary);
+	SlotData.bUsesAmmo = bIsPrimary || bIsSecondary;
+	if (!SlotData.bUsesAmmo)
+	{
+		return SlotData;
+	}
+
+	if (bIsSecondary)
+	{
+		SlotData.CurrentAmmo = FMath::RoundToInt(GetAttributeValue(UBlackoutAmmoAttributeSet::GetSecondaryClipAmmoAttribute()));
+		SlotData.ReserveAmmo = FMath::RoundToInt(GetAttributeValue(UBlackoutAmmoAttributeSet::GetSecondaryReserveAmmoAttribute()));
+	}
+	else
+	{
+		SlotData.CurrentAmmo = FMath::RoundToInt(GetAttributeValue(UBlackoutAmmoAttributeSet::GetPrimaryClipAmmoAttribute()));
+		SlotData.ReserveAmmo = FMath::RoundToInt(GetAttributeValue(UBlackoutAmmoAttributeSet::GetPrimaryReserveAmmoAttribute()));
+	}
+
+	SlotData.TotalAmmo = SlotData.CurrentAmmo + SlotData.ReserveAmmo;
+	return SlotData;
+}
+
 float UBlackoutHUDWidgetController::GetAttributeValue(const FGameplayAttribute& Attribute) const
 {
 	const UAbilitySystemComponent* ASC = AbilitySystemComponent.Get();
@@ -248,4 +313,5 @@ void UBlackoutHUDWidgetController::HandleMaxStaminaChanged(const FOnAttributeCha
 void UBlackoutHUDWidgetController::HandleAmmoChanged(const FOnAttributeChangeData& ChangeData)
 {
 	BroadcastAmmo();
+	BroadcastWeaponAmmoDisplay(false);
 }

@@ -29,6 +29,8 @@ void ABOWeaponBase::ApplyCommonStats(const FBlackoutWeaponStat& WeaponStats)
 {
 	CachedStats = WeaponStats;
 
+	WeaponIcon = CachedStats.WeaponIcon;
+
 	if (CachedStats.WeaponTag.IsValid())
 	{
 		WeaponTag = CachedStats.WeaponTag;

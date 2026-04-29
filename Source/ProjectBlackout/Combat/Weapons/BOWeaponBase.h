@@ -7,6 +7,7 @@
 #include "BOWeaponBase.generated.h"
 
 class USkeletalMeshComponent;
+class UTexture2D;
 class ABlackoutCharacterBase;
 
 UCLASS(Abstract)
@@ -22,6 +23,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Blackout|Combat")
 	FGameplayTag GetWeaponTag() const { return WeaponTag; }
+
+	UFUNCTION(BlueprintCallable, Category = "Blackout|Weapon")
+	UTexture2D* GetWeaponIcon() const { return WeaponIcon; }
 
 	UFUNCTION(BlueprintCallable, Category = "Blackout|Combat")
 	float GetBaseDamage() const;
@@ -53,6 +57,9 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Blackout|Combat")
 	FGameplayTag WeaponTag;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Blackout|UI")
+	TObjectPtr<UTexture2D> WeaponIcon;
 
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "Blackout|Combat")
 	FBlackoutWeaponStat CachedStats;

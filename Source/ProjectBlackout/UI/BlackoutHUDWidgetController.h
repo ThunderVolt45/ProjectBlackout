@@ -5,6 +5,7 @@
 #include "AttributeSet.h"
 #include "GameplayEffectTypes.h"
 #include "GameplayTagContainer.h"
+#include "UI/BlackoutWeaponAmmoTypes.h"
 #include "UObject/Object.h"
 #include "BlackoutHUDWidgetController.generated.h"
 
@@ -21,6 +22,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FBlackoutHUDValueChangedSignature, 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FBlackoutHUDAmmoChangedSignature, int32, ClipAmmo, int32, MaxClipAmmo, int32, ReserveAmmo);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FBlackoutHUDWeaponChangedSignature, ABOWeaponBase*, EquippedWeapon, FGameplayTag, WeaponSlotTag);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FBlackoutHUDBoolChangedSignature, bool, bNewValue);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FBlackoutHUDWeaponAmmoDisplayChangedSignature, const FBlackoutWeaponAmmoSlotData&, PrimaryWeaponData, const FBlackoutWeaponAmmoSlotData&, SecondaryWeaponData, bool, bPlaySwapAnimation);
 
 UCLASS(BlueprintType)
 class PROJECTBLACKOUT_API UBlackoutHUDWidgetController : public UObject
@@ -52,6 +54,9 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Blackout|HUD")
 	FBlackoutHUDBoolChangedSignature OnAimingChanged;
 
+	UPROPERTY(BlueprintAssignable, Category = "Blackout|HUD")
+	FBlackoutHUDWeaponAmmoDisplayChangedSignature OnWeaponAmmoDisplayChanged;
+
 protected:
 	UFUNCTION()
 	void HandleEquippedWeaponChanged(ABOWeaponBase* EquippedWeapon, FGameplayTag WeaponSlotTag);
@@ -66,6 +71,8 @@ private:
 	void BroadcastAmmo() const;
 	void BroadcastEquippedWeapon() const;
 	void BroadcastAiming() const;
+	void BroadcastWeaponAmmoDisplay(bool bPlaySwapAnimation) const;
+	FBlackoutWeaponAmmoSlotData MakeWeaponAmmoSlotData(ABOWeaponBase* Weapon, FGameplayTag WeaponSlotTag, bool bIsEquipped) const;
 	float GetAttributeValue(const FGameplayAttribute& Attribute) const;
 	FGameplayTag GetEquippedWeaponSlotTag() const;
 

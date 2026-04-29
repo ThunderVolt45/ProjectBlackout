@@ -3,11 +3,13 @@
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
 #include "GameplayTagContainer.h"
+#include "UI/BlackoutWeaponAmmoTypes.h"
 #include "BlackoutHUDWidget.generated.h"
 
 class ABOWeaponBase;
 class UBlackoutHUDWidgetController;
 class UBlackoutValueBarWidget;
+class UBlackoutWeaponAmmoWidget;
 
 UCLASS(BlueprintType, Blueprintable)
 class PROJECTBLACKOUT_API UBlackoutHUDWidget : public UUserWidget
@@ -34,6 +36,9 @@ protected:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "Blackout|HUD")
 	TObjectPtr<UBlackoutValueBarWidget> StaminaBarWidget;
 
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "Blackout|HUD")
+	TObjectPtr<UBlackoutWeaponAmmoWidget> AmmoWidget;
+
 	UFUNCTION(BlueprintImplementableEvent, meta = (DisplayName = "On Widget Controller Set"), Category = "Blackout|HUD")
 	void ReceiveWidgetControllerSet();
 
@@ -52,6 +57,12 @@ protected:
 	UFUNCTION(BlueprintImplementableEvent, meta = (DisplayName = "On Aiming Changed"), Category = "Blackout|HUD")
 	void ReceiveAimingChanged(bool bIsAiming);
 
+	UFUNCTION(BlueprintImplementableEvent, meta = (DisplayName = "On Weapon Ammo Display Changed"), Category = "Blackout|HUD")
+	void ReceiveWeaponAmmoDisplayChanged(
+		const FBlackoutWeaponAmmoSlotData& PrimaryWeaponData,
+		const FBlackoutWeaponAmmoSlotData& SecondaryWeaponData,
+		bool bPlaySwapAnimation);
+
 private:
 	void UnbindWidgetControllerCallbacks();
 
@@ -69,4 +80,10 @@ private:
 
 	UFUNCTION()
 	void HandleAimingChanged(bool bIsAiming);
+
+	UFUNCTION()
+	void HandleWeaponAmmoDisplayChanged(
+		const FBlackoutWeaponAmmoSlotData& PrimaryWeaponData,
+		const FBlackoutWeaponAmmoSlotData& SecondaryWeaponData,
+		bool bPlaySwapAnimation);
 };

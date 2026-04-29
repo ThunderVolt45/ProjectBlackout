@@ -80,6 +80,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Blackout|Combat")
 	ABOWeaponBase* GetEquippedWeapon() const { return EquippedWeapon; }
 
+	UFUNCTION(BlueprintCallable, Category = "Blackout|Combat")
+	ABOFirearm* GetPrimaryWeapon() const { return PrimaryWeapon; }
+
+	UFUNCTION(BlueprintCallable, Category = "Blackout|Combat")
+	ABOFirearm* GetSecondaryWeapon() const { return SecondaryWeapon; }
+
 	UPROPERTY(BlueprintAssignable, Category = "Blackout|Combat")
 	FBlackoutEquippedWeaponChangedSignature OnEquippedWeaponChanged;
 

@@ -3,6 +3,7 @@
 #include "Core/BlackoutLog.h"
 #include "UI/BlackoutHUDWidgetController.h"
 #include "UI/BlackoutValueBarWidget.h"
+#include "UI/BlackoutWeaponAmmoWidget.h"
 
 void UBlackoutHUDWidget::NativeOnInitialized()
 {
@@ -32,6 +33,7 @@ void UBlackoutHUDWidget::SetWidgetController(UBlackoutHUDWidgetController* InWid
 	WidgetController->OnAmmoChanged.AddDynamic(this, &UBlackoutHUDWidget::HandleAmmoChanged);
 	WidgetController->OnEquippedWeaponChanged.AddDynamic(this, &UBlackoutHUDWidget::HandleEquippedWeaponChanged);
 	WidgetController->OnAimingChanged.AddDynamic(this, &UBlackoutHUDWidget::HandleAimingChanged);
+	WidgetController->OnWeaponAmmoDisplayChanged.AddDynamic(this, &UBlackoutHUDWidget::HandleWeaponAmmoDisplayChanged);
 
 	ReceiveWidgetControllerSet();
 }
@@ -48,6 +50,7 @@ void UBlackoutHUDWidget::UnbindWidgetControllerCallbacks()
 	WidgetController->OnAmmoChanged.RemoveAll(this);
 	WidgetController->OnEquippedWeaponChanged.RemoveAll(this);
 	WidgetController->OnAimingChanged.RemoveAll(this);
+	WidgetController->OnWeaponAmmoDisplayChanged.RemoveAll(this);
 }
 
 void UBlackoutHUDWidget::HandleHealthChanged(float CurrentHealth, float MaxHealth)
@@ -83,4 +86,17 @@ void UBlackoutHUDWidget::HandleEquippedWeaponChanged(ABOWeaponBase* EquippedWeap
 void UBlackoutHUDWidget::HandleAimingChanged(bool bIsAiming)
 {
 	ReceiveAimingChanged(bIsAiming);
+}
+
+void UBlackoutHUDWidget::HandleWeaponAmmoDisplayChanged(
+	const FBlackoutWeaponAmmoSlotData& PrimaryWeaponData,
+	const FBlackoutWeaponAmmoSlotData& SecondaryWeaponData,
+	bool bPlaySwapAnimation)
+{
+	if (AmmoWidget)
+	{
+		AmmoWidget->SetWeaponAmmoData(PrimaryWeaponData, SecondaryWeaponData, bPlaySwapAnimation);
+	}
+
+	ReceiveWeaponAmmoDisplayChanged(PrimaryWeaponData, SecondaryWeaponData, bPlaySwapAnimation);
 }

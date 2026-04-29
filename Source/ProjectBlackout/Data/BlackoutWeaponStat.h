@@ -5,6 +5,8 @@
 #include "GameplayTagContainer.h"
 #include "BlackoutWeaponStat.generated.h"
 
+class UTexture2D;
+
 /**
  * 모든 무기가 공유하는 기본 스탯 행 구조체.
  */
@@ -19,6 +21,10 @@ struct PROJECTBLACKOUT_API FBlackoutWeaponStat : public FTableRowBase
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Blackout|Weapon", meta = (ClampMin = 0.f))
 	float BaseDamage = 20.f;
+
+	/** HUD에 표시할 무기 아이콘. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Blackout|UI")
+	TObjectPtr<UTexture2D> WeaponIcon = nullptr;
 
 	/** 장착 중인 무기를 부착할 캐릭터 메시 소켓 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Blackout|Weapon")
