@@ -13,6 +13,9 @@ class ABOFirearm;
 class ABOMeleeWeapon;
 class UBOCharacterData;
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FBlackoutEquippedWeaponChangedSignature, ABOWeaponBase*, EquippedWeapon, FGameplayTag, WeaponSlotTag);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FBlackoutAimingChangedSignature, bool, bIsAiming);
+
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class PROJECTBLACKOUT_API UBlackoutCombatComponent : public UActorComponent
 {
@@ -76,6 +79,18 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Blackout|Combat")
 	ABOWeaponBase* GetEquippedWeapon() const { return EquippedWeapon; }
+
+	UFUNCTION(BlueprintCallable, Category = "Blackout|Combat")
+	ABOFirearm* GetPrimaryWeapon() const { return PrimaryWeapon; }
+
+	UFUNCTION(BlueprintCallable, Category = "Blackout|Combat")
+	ABOFirearm* GetSecondaryWeapon() const { return SecondaryWeapon; }
+
+	UPROPERTY(BlueprintAssignable, Category = "Blackout|Combat")
+	FBlackoutEquippedWeaponChangedSignature OnEquippedWeaponChanged;
+
+	UPROPERTY(BlueprintAssignable, Category = "Blackout|Combat")
+	FBlackoutAimingChangedSignature OnAimingChanged;
 
 	UFUNCTION(BlueprintCallable, Category = "Blackout|Combat")
 	ABOFirearm* GetEquippedFirearm() const;
