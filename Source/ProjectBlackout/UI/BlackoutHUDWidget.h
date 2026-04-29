@@ -7,6 +7,7 @@
 
 class ABOWeaponBase;
 class UBlackoutHUDWidgetController;
+class UBlackoutValueBarWidget;
 
 UCLASS(BlueprintType, Blueprintable)
 class PROJECTBLACKOUT_API UBlackoutHUDWidget : public UUserWidget
@@ -26,6 +27,12 @@ protected:
 
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "Blackout|HUD")
 	TObjectPtr<UBlackoutHUDWidgetController> WidgetController;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "Blackout|HUD")
+	TObjectPtr<UBlackoutValueBarWidget> HealthBarWidget;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "Blackout|HUD")
+	TObjectPtr<UBlackoutValueBarWidget> StaminaBarWidget;
 
 	UFUNCTION(BlueprintImplementableEvent, meta = (DisplayName = "On Widget Controller Set"), Category = "Blackout|HUD")
 	void ReceiveWidgetControllerSet();

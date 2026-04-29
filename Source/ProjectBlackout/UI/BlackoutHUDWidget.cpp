@@ -2,6 +2,7 @@
 
 #include "Core/BlackoutLog.h"
 #include "UI/BlackoutHUDWidgetController.h"
+#include "UI/BlackoutValueBarWidget.h"
 
 void UBlackoutHUDWidget::NativeOnInitialized()
 {
@@ -51,11 +52,21 @@ void UBlackoutHUDWidget::UnbindWidgetControllerCallbacks()
 
 void UBlackoutHUDWidget::HandleHealthChanged(float CurrentHealth, float MaxHealth)
 {
+	if (HealthBarWidget)
+	{
+		HealthBarWidget->SetValue(CurrentHealth, MaxHealth);
+	}
+
 	ReceiveHealthChanged(CurrentHealth, MaxHealth);
 }
 
 void UBlackoutHUDWidget::HandleStaminaChanged(float CurrentStamina, float MaxStamina)
 {
+	if (StaminaBarWidget)
+	{
+		StaminaBarWidget->SetValue(CurrentStamina, MaxStamina);
+	}
+
 	ReceiveStaminaChanged(CurrentStamina, MaxStamina);
 }
 
