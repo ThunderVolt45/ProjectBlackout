@@ -108,6 +108,9 @@ public:
 	FVector GetAimImpactPoint() const;
 
 	UFUNCTION(BlueprintCallable, Category = "Blackout|Combat")
+	bool GetAimTargetHitResult(FHitResult& OutHitResult, FVector& OutTraceEnd) const;
+
+	UFUNCTION(BlueprintCallable, Category = "Blackout|Combat")
 	bool GetTrueImpactPoint(FHitResult& OutHitResult, FVector& OutImpactPoint, FVector& OutTraceEnd) const;
 
 	UFUNCTION(Server, Reliable)
@@ -193,6 +196,7 @@ private:
 	void ReleaseActivePrimaryAction();
 	void HandleAbilityInputPressed(EBlackoutAbilityInputID InputID) const;
 	void HandleAbilityInputReleased(EBlackoutAbilityInputID InputID) const;
+	bool PerformWeaponTrace(const FVector& TraceStart, const FVector& TraceEnd, const AActor* IgnoredActor, FHitResult& OutHitResult) const;
 
 	
 	// 현재 열려 있는 근접 공격창에서 사용할 데미지 스펙

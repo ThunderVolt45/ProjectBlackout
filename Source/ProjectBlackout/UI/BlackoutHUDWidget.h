@@ -45,6 +45,12 @@ protected:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "Blackout|HUD")
 	TObjectPtr<UWidget> ImpactIndicatorWidget;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Blackout|HUD")
+	FLinearColor ImpactIndicatorDefaultColor = FLinearColor::White;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Blackout|HUD")
+	FLinearColor ImpactIndicatorMismatchColor = FLinearColor::Red;
+
 	UFUNCTION(BlueprintImplementableEvent, meta = (DisplayName = "On Widget Controller Set"), Category = "Blackout|HUD")
 	void ReceiveWidgetControllerSet();
 
@@ -72,6 +78,7 @@ protected:
 private:
 	void UnbindWidgetControllerCallbacks();
 	void UpdateImpactIndicator(const FBlackoutImpactIndicatorData& ImpactIndicatorData) const;
+	void ApplyImpactIndicatorColor(const FLinearColor& IndicatorColor) const;
 
 	UFUNCTION()
 	void HandleHealthChanged(float CurrentHealth, float MaxHealth);

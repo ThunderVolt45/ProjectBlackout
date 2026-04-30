@@ -5,6 +5,7 @@
 #include "Combat/Components/BlackoutCombatComponent.h"
 #include "Combat/Weapons/BOFirearm.h"
 #include "Combat/Weapons/BOWeaponBase.h"
+#include "Components/PrimitiveComponent.h"
 #include "Core/BlackoutLog.h"
 #include "Framework/BlackoutPlayerController.h"
 #include "Framework/BlackoutPlayerState.h"
@@ -13,6 +14,25 @@
 #include "GAS/Attributes/BlackoutPlayerAttributeSet.h"
 #include "GameplayTags/BlackoutGameplayTags.h"
 #include "Blueprint/WidgetLayoutLibrary.h"
+
+namespace
+{
+	AActor* ResolveIndicatorTargetActor(const FHitResult& HitResult)
+	{
+		if (!HitResult.bBlockingHit)
+		{
+			return nullptr;
+		}
+
+		if (AActor* HitActor = HitResult.GetActor())
+		{
+			return HitActor;
+		}
+
+		const UPrimitiveComponent* HitComponent = HitResult.GetComponent();
+		return HitComponent ? HitComponent->GetOwner() : nullptr;
+	}
+}
 
 bool UBlackoutHUDWidgetController::Initialize(APlayerController* InPlayerController)
 {
@@ -99,10 +119,17 @@ bool UBlackoutHUDWidgetController::GetImpactIndicatorData(FBlackoutImpactIndicat
 		return false;
 	}
 
-	FHitResult HitResult;
+	FHitResult AimHitResult;
+	FVector AimTraceEnd = FVector::ZeroVector;
+	if (!BlackoutCombatComponent->GetAimTargetHitResult(AimHitResult, AimTraceEnd))
+	{
+		return false;
+	}
+
+	FHitResult TrueImpactHitResult;
 	FVector ImpactPoint = FVector::ZeroVector;
 	FVector TraceEnd = FVector::ZeroVector;
-	if (!BlackoutCombatComponent->GetTrueImpactPoint(HitResult, ImpactPoint, TraceEnd))
+	if (!BlackoutCombatComponent->GetTrueImpactPoint(TrueImpactHitResult, ImpactPoint, TraceEnd))
 	{
 		return false;
 	}
@@ -118,7 +145,9 @@ bool UBlackoutHUDWidgetController::GetImpactIndicatorData(FBlackoutImpactIndicat
 	}
 
 	OutIndicatorData.bIsVisible = true;
-	OutIndicatorData.bHasBlockingHit = HitResult.bBlockingHit;
+	OutIndicatorData.bHasBlockingHit = TrueImpactHitResult.bBlockingHit;
+	OutIndicatorData.bTargetMismatch = AimHitResult.bBlockingHit
+		&& ResolveIndicatorTargetActor(AimHitResult) != ResolveIndicatorTargetActor(TrueImpactHitResult);
 	OutIndicatorData.WorldLocation = ImpactPoint;
 	OutIndicatorData.TraceEndLocation = TraceEnd;
 	OutIndicatorData.ScreenPosition = ScreenPosition;

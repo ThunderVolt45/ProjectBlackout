@@ -1,7 +1,9 @@
 #include "UI/BlackoutHUDWidget.h"
 
 #include "Core/BlackoutLog.h"
+#include "Components/Border.h"
 #include "Components/CanvasPanelSlot.h"
+#include "Components/Image.h"
 #include "Components/Widget.h"
 #include "UI/BlackoutHUDWidgetController.h"
 #include "UI/BlackoutValueBarWidget.h"
@@ -84,6 +86,10 @@ void UBlackoutHUDWidget::UpdateImpactIndicator(const FBlackoutImpactIndicatorDat
 		return;
 	}
 
+	ApplyImpactIndicatorColor(ImpactIndicatorData.bTargetMismatch
+		? ImpactIndicatorMismatchColor
+		: ImpactIndicatorDefaultColor);
+
 	if (UCanvasPanelSlot* CanvasSlot = Cast<UCanvasPanelSlot>(ImpactIndicatorWidget->Slot))
 	{
 		CanvasSlot->SetAlignment(FVector2D(0.5f, 0.5f));
@@ -93,6 +99,20 @@ void UBlackoutHUDWidget::UpdateImpactIndicator(const FBlackoutImpactIndicatorDat
 
 	ImpactIndicatorWidget->SetRenderTransformPivot(FVector2D(0.5f, 0.5f));
 	ImpactIndicatorWidget->SetRenderTranslation(ImpactIndicatorData.ScreenPosition);
+}
+
+void UBlackoutHUDWidget::ApplyImpactIndicatorColor(const FLinearColor& IndicatorColor) const
+{
+	if (UImage* IndicatorImage = Cast<UImage>(ImpactIndicatorWidget))
+	{
+		IndicatorImage->SetColorAndOpacity(IndicatorColor);
+		return;
+	}
+
+	if (UBorder* IndicatorBorder = Cast<UBorder>(ImpactIndicatorWidget))
+	{
+		IndicatorBorder->SetBrushColor(IndicatorColor);
+	}
 }
 
 void UBlackoutHUDWidget::HandleHealthChanged(float CurrentHealth, float MaxHealth)
