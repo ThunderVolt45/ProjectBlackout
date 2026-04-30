@@ -86,9 +86,18 @@ void UBlackoutHUDWidget::UpdateImpactIndicator(const FBlackoutImpactIndicatorDat
 		return;
 	}
 
-	ApplyImpactIndicatorColor(ImpactIndicatorData.bTargetMismatch
-		? ImpactIndicatorMismatchColor
-		: ImpactIndicatorDefaultColor);
+	FLinearColor IndicatorColor = ImpactIndicatorDefaultColor;
+	if (ImpactIndicatorData.bIsOccludedFromCamera)
+	{
+		IndicatorColor = ImpactIndicatorOccludedColor;
+	}
+	else if (ImpactIndicatorData.bTargetMismatch)
+	{
+		IndicatorColor = ImpactIndicatorMismatchColor;
+	}
+
+	ApplyImpactIndicatorColor(IndicatorColor);
+	ImpactIndicatorWidget->SetRenderOpacity(1.0f);
 
 	if (UCanvasPanelSlot* CanvasSlot = Cast<UCanvasPanelSlot>(ImpactIndicatorWidget->Slot))
 	{
