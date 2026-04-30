@@ -154,9 +154,9 @@ void UBlackoutHUDWidget::HandleEquippedWeaponChanged(ABOWeaponBase* EquippedWeap
 	ReceiveEquippedWeaponChanged(EquippedWeapon, WeaponSlotTag);
 }
 
-void UBlackoutHUDWidget::HandleAimingChanged(bool bIsAiming)
+void UBlackoutHUDWidget::HandleAimingChanged(bool bIsAiming, int32 CrosshairType)
 {
-	ReceiveAimingChanged(bIsAiming);
+	ReceiveAimingChanged(bIsAiming, CrosshairType);
 }
 
 void UBlackoutHUDWidget::HandleWeaponAmmoDisplayChanged(
