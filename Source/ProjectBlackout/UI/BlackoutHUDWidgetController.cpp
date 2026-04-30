@@ -3,7 +3,7 @@
 #include "AbilitySystemComponent.h"
 #include "Characters/BlackoutPlayerCharacter.h"
 #include "Combat/Components/BlackoutCombatComponent.h"
-#include "Combat/Weapons/BOFirearm.h"
+#include "Combat/Components/BlackoutImpactIndicatorComponent.h"
 #include "Combat/Weapons/BOWeaponBase.h"
 #include "Core/BlackoutLog.h"
 #include "Framework/BlackoutPlayerController.h"
@@ -12,6 +12,7 @@
 #include "GAS/Attributes/BlackoutBaseAttributeSet.h"
 #include "GAS/Attributes/BlackoutPlayerAttributeSet.h"
 #include "GameplayTags/BlackoutGameplayTags.h"
+#include "Blueprint/WidgetLayoutLibrary.h"
 
 bool UBlackoutHUDWidgetController::Initialize(APlayerController* InPlayerController)
 {
@@ -82,6 +83,37 @@ void UBlackoutHUDWidgetController::BroadcastInitialValues()
 	BroadcastWeaponAmmoDisplay(false);
 }
 
+bool UBlackoutHUDWidgetController::GetImpactIndicatorData(FBlackoutImpactIndicatorData& OutIndicatorData) const
+{
+	OutIndicatorData = FBlackoutImpactIndicatorData();
+
+	ABlackoutPlayerController* BlackoutPlayerController = PlayerController.Get();
+	const UBlackoutImpactIndicatorComponent* BlackoutImpactIndicatorComponent = ImpactIndicatorComponent.Get();
+	if (!BlackoutPlayerController || !BlackoutPlayerController->IsLocalController() || !BlackoutImpactIndicatorComponent)
+	{
+		return false;
+	}
+
+	if (!BlackoutImpactIndicatorComponent->GetImpactIndicatorData(OutIndicatorData))
+	{
+		return false;
+	}
+
+	FVector2D ScreenPosition = FVector2D::ZeroVector;
+	if (!UWidgetLayoutLibrary::ProjectWorldLocationToWidgetPosition(
+		BlackoutPlayerController,
+		OutIndicatorData.WorldLocation,
+		ScreenPosition,
+		true))
+	{
+		return false;
+	}
+
+	OutIndicatorData.ScreenPosition = ScreenPosition;
+
+	return true;
+}
+
 void UBlackoutHUDWidgetController::HandleEquippedWeaponChanged(ABOWeaponBase* EquippedWeapon, FGameplayTag WeaponSlotTag)
 {
 	OnEquippedWeaponChanged.Broadcast(EquippedWeapon, WeaponSlotTag);
@@ -145,11 +177,17 @@ bool UBlackoutHUDWidgetController::ResolveDependencies(APlayerController* InPlay
 	if (ABlackoutPlayerCharacter* PlayerCharacter = Cast<ABlackoutPlayerCharacter>(BlackoutPlayerController->GetPawn()))
 	{
 		CombatComponent = PlayerCharacter->GetCombatComponent();
+		ImpactIndicatorComponent = PlayerCharacter->GetImpactIndicatorComponent();
 	}
 
 	if (!CombatComponent.IsValid())
 	{
 		BO_LOG_CORE(Warning, "HUD 초기화: CombatComponent를 아직 찾을 수 없습니다. 무기 UI는 재초기화 전까지 갱신되지 않을 수 있습니다.");
+	}
+
+	if (!ImpactIndicatorComponent.IsValid())
+	{
+		BO_LOG_CORE(Warning, "HUD 초기화: ImpactIndicatorComponent를 아직 찾을 수 없습니다. 착탄 인디케이터는 재초기화 전까지 갱신되지 않을 수 있습니다.");
 	}
 
 	return true;

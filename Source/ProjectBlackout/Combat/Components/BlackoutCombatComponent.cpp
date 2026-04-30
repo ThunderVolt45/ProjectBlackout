@@ -8,7 +8,6 @@
 #include "Combat/Weapons/BOFirearm.h"
 #include "Combat/Weapons/BOMeleeWeapon.h"
 #include "Combat/Weapons/BOWeaponBase.h"
-#include "Core/BlackoutCollisionChannels.h"
 #include "Data/BOCharacterData.h"
 #include "Engine/World.h"
 #include "GAS/Attributes/BlackoutAmmoAttributeSet.h"
@@ -363,40 +362,6 @@ FTransform UBlackoutCombatComponent::GetMuzzleTransform() const
 	}
 
 	return FTransform::Identity;
-}
-
-FVector UBlackoutCombatComponent::GetAimImpactPoint() const
-{
-	if (const APawn* OwnerPawn = Cast<APawn>(GetOwner()))
-	{
-		if (AController* OwnerController = OwnerPawn->GetController())
-		{
-			FVector ViewLocation = FVector::ZeroVector;
-			FRotator ViewRotation = FRotator::ZeroRotator;
-			OwnerController->GetPlayerViewPoint(ViewLocation, ViewRotation);
-
-			const FVector TraceStart = ViewLocation;
-			const FVector TraceEnd = TraceStart + ViewRotation.Vector() * AimTraceDistance;
-
-			FHitResult HitResult;
-			FCollisionQueryParams QueryParams(SCENE_QUERY_STAT(BlackoutCombat_AimTrace), false, GetOwner());
-			QueryParams.AddIgnoredActor(EquippedWeapon);
-
-			if (GetWorld() && GetWorld()->LineTraceSingleByChannel(HitResult, TraceStart, TraceEnd, BlackoutCollisionChannels::WeaponTrace, QueryParams))
-			{
-				return HitResult.ImpactPoint;
-			}
-
-			return TraceEnd;
-		}
-	}
-
-	if (GetOwner())
-	{
-		return GetMuzzleTransform().GetLocation() + GetOwner()->GetActorForwardVector() * AimTraceDistance;
-	}
-
-	return FVector::ZeroVector;
 }
 
 void UBlackoutCombatComponent::Server_EquipWeapon_Implementation(ABOWeaponBase* NewWeapon)

@@ -202,6 +202,11 @@ bool ABOFirearm::IsAutomatic() const
 	return CachedFirearmStats.bIsAutomatic;
 }
 
+bool ABOFirearm::UsesHitscan() const
+{
+	return bUseHitscan;
+}
+
 int32 ABOFirearm::GetMagazineSize() const
 {
 	return CachedFirearmStats.MagazineSize;
@@ -215,4 +220,27 @@ int32 ABOFirearm::GetMaxReserveAmmo() const
 float ABOFirearm::GetSplashRadius() const
 {
 	return CachedFirearmStats.SplashRadius;
+}
+
+TSubclassOf<ABOProjectile> ABOFirearm::GetProjectileClass() const
+{
+	return ProjectileClass;
+}
+
+float ABOFirearm::GetProjectileLaunchSpeed() const
+{
+	const ABOProjectile* ProjectileDefault = ProjectileClass ? ProjectileClass->GetDefaultObject<ABOProjectile>() : nullptr;
+	return ProjectileDefault ? ProjectileDefault->GetInitialSpeed() : 0.0f;
+}
+
+float ABOFirearm::GetProjectileGravityScale() const
+{
+	const ABOProjectile* ProjectileDefault = ProjectileClass ? ProjectileClass->GetDefaultObject<ABOProjectile>() : nullptr;
+	return ProjectileDefault ? ProjectileDefault->GetGravityScale() : 1.0f;
+}
+
+float ABOFirearm::GetProjectileCollisionRadius() const
+{
+	const ABOProjectile* ProjectileDefault = ProjectileClass ? ProjectileClass->GetDefaultObject<ABOProjectile>() : nullptr;
+	return ProjectileDefault ? ProjectileDefault->GetCollisionRadius() : 0.0f;
 }

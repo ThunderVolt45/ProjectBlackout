@@ -104,9 +104,6 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Blackout|Combat")
 	FTransform GetMuzzleTransform() const;
 
-	UFUNCTION(BlueprintCallable, Category = "Blackout|Combat")
-	FVector GetAimImpactPoint() const;
-
 	UFUNCTION(Server, Reliable)
 	void Server_EquipWeapon(ABOWeaponBase* NewWeapon);
 
@@ -164,12 +161,6 @@ protected:
 
 	UPROPERTY(ReplicatedUsing = OnRep_MeleeWeaponAttachmentOverride, BlueprintReadOnly, Category = "Blackout|Combat")
 	bool bMeleeWeaponAttachmentOverride = false;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Blackout|Combat")
-	float AimParallaxOffset = 100.0f;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Blackout|Combat")
-	float AimTraceDistance = 10000.0f;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Blackout|Combat")
 	FName EquippedWeaponSocketName = TEXT("WeaponSocket");

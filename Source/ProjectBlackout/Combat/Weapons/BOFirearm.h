@@ -34,6 +34,9 @@ public:
 	bool IsAutomatic() const;
 
 	UFUNCTION(BlueprintCallable, Category = "Blackout|Combat")
+	bool UsesHitscan() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Blackout|Combat")
 	int32 GetMagazineSize() const;
 
 	UFUNCTION(BlueprintCallable, Category = "Blackout|Combat")
@@ -41,6 +44,18 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Blackout|Combat")
 	float GetSplashRadius() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Blackout|Combat")
+	TSubclassOf<ABOProjectile> GetProjectileClass() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Blackout|Combat")
+	float GetProjectileLaunchSpeed() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Blackout|Combat")
+	float GetProjectileGravityScale() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Blackout|Combat")
+	float GetProjectileCollisionRadius() const;
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Blackout|Combat")

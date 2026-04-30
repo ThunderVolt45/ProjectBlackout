@@ -5,6 +5,7 @@
 #include "AttributeSet.h"
 #include "GameplayEffectTypes.h"
 #include "GameplayTagContainer.h"
+#include "UI/BlackoutHUDTypes.h"
 #include "UI/BlackoutWeaponAmmoTypes.h"
 #include "UObject/Object.h"
 #include "BlackoutHUDWidgetController.generated.h"
@@ -16,6 +17,7 @@ class UAbilitySystemComponent;
 class UBlackoutAmmoAttributeSet;
 class UBlackoutBaseAttributeSet;
 class UBlackoutCombatComponent;
+class UBlackoutImpactIndicatorComponent;
 class UBlackoutPlayerAttributeSet;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FBlackoutHUDValueChangedSignature, float, CurrentValue, float, MaxValue);
@@ -38,6 +40,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Blackout|HUD")
 	void BroadcastInitialValues();
+
+	UFUNCTION(BlueprintCallable, Category = "Blackout|HUD")
+	bool GetImpactIndicatorData(FBlackoutImpactIndicatorData& OutIndicatorData) const;
 
 	UPROPERTY(BlueprintAssignable, Category = "Blackout|HUD")
 	FBlackoutHUDValueChangedSignature OnHealthChanged;
@@ -89,6 +94,7 @@ private:
 	TWeakObjectPtr<const UBlackoutPlayerAttributeSet> PlayerAttributeSet;
 	TWeakObjectPtr<const UBlackoutAmmoAttributeSet> AmmoAttributeSet;
 	TWeakObjectPtr<UBlackoutCombatComponent> CombatComponent;
+	TWeakObjectPtr<UBlackoutImpactIndicatorComponent> ImpactIndicatorComponent;
 
 	bool bCallbacksBound = false;
 };
