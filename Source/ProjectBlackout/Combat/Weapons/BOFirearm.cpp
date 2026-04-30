@@ -252,3 +252,5 @@ float ABOFirearm::GetSpreadRecoveryRate() const { return CachedFirearmStats.Spre
 float ABOFirearm::GetVerticalRecoilMin() const { return CachedFirearmStats.VerticalRecoilMin; }
 float ABOFirearm::GetVerticalRecoilMax() const { return CachedFirearmStats.VerticalRecoilMax; }
 float ABOFirearm::GetHorizontalRecoilRange() const { return CachedFirearmStats.HorizontalRecoilRange; }
+float ABOFirearm::GetMaxRecoilPitchDegrees() const { return CachedFirearmStats.MaxRecoilPitchDegrees; }
+float ABOFirearm::GetRecoilRecoveryFraction() const { return CachedFirearmStats.RecoilRecoveryFraction; }

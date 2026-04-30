@@ -19,8 +19,14 @@
 
 UBlackoutCombatComponent::UBlackoutCombatComponent()
 {
-	PrimaryComponentTick.bCanEverTick = false;
+	PrimaryComponentTick.bCanEverTick = true;
 	SetIsReplicatedByDefault(true);
+}
+
+void UBlackoutCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+{
+	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+	TickRecoil(DeltaTime);
 }
 
 void UBlackoutCombatComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -918,18 +924,23 @@ void UBlackoutCombatComponent::AccumulateSpread()
 void UBlackoutCombatComponent::ApplyRecoil()
 {
 	const ABOFirearm* Firearm = GetEquippedFirearm();
-	APawn* OwnerPawn = Cast<APawn>(GetOwner());
-	if (!Firearm || !OwnerPawn)
+	if (!Firearm)
 	{
 		return;
 	}
 
-	// 수직: 음수 = 카메라 위로 (Unreal에서 Pitch 감소 = 위 방향)
+	if (bIsRecoveringRecoil)
+	{
+		AccumulatedRecoilPitch += RecoverableRecoilPitch;
+		RecoverableRecoilPitch = 0.0f;
+		bIsRecoveringRecoil = false;
+	}
+
 	const float VerticalRecoil = FMath::RandRange(Firearm->GetVerticalRecoilMin(), Firearm->GetVerticalRecoilMax());
 	const float HorizontalRecoil = FMath::RandRange(-Firearm->GetHorizontalRecoilRange(), Firearm->GetHorizontalRecoilRange());
 
-	OwnerPawn->AddControllerPitchInput(-VerticalRecoil);
-	OwnerPawn->AddControllerYawInput(HorizontalRecoil);
+	PendingRecoilPitch += -VerticalRecoil;
+	PendingRecoilYaw += HorizontalRecoil;
 }
 
 void UBlackoutCombatComponent::TickSpreadRecovery()
@@ -961,6 +972,73 @@ void UBlackoutCombatComponent::TickSpreadRecovery()
 		BaseSpread);
 }
 
+void UBlackoutCombatComponent::TickRecoil(float DeltaTime)
+{
+	const bool bHasPendingRecoil = !FMath::IsNearlyZero(PendingRecoilPitch, 0.01f) || !FMath::IsNearlyZero(PendingRecoilYaw, 0.01f);
+
+	if (bHasPendingRecoil)
+	{
+		APawn* OwnerPawn = Cast<APawn>(GetOwner());
+		if (!OwnerPawn)
+		{
+			return;
+		}
+
+		const float Alpha = FMath::Clamp(RecoilInterpSpeed * DeltaTime, 0.0f, 1.0f);
+
+		float PitchStep = PendingRecoilPitch * Alpha;
+		const float YawStep = PendingRecoilYaw * Alpha;
+
+		const ABOFirearm* Firearm = GetEquippedFirearm();
+		const float MaxPitch = Firearm ? Firearm->GetMaxRecoilPitchDegrees() : 15.0f;
+		const float RemainingRoom = FMath::Max(0.0f, MaxPitch - AccumulatedRecoilPitch);
+		const float AbsPitchStep = FMath::Abs(PitchStep);
+		if (AbsPitchStep > RemainingRoom)
+		{
+			PitchStep = -RemainingRoom;
+		}
+
+		OwnerPawn->AddControllerPitchInput(PitchStep);
+		OwnerPawn->AddControllerYawInput(YawStep);
+
+		PendingRecoilPitch -= PendingRecoilPitch * Alpha;
+		PendingRecoilYaw -= PendingRecoilYaw * Alpha;
+		AccumulatedRecoilPitch += FMath::Abs(PitchStep);
+
+		if (FMath::IsNearlyZero(PendingRecoilPitch, 0.01f) && FMath::IsNearlyZero(PendingRecoilYaw, 0.01f))
+		{
+			PendingRecoilPitch = 0.0f;
+			PendingRecoilYaw = 0.0f;
+
+			const float RecoveryFraction = Firearm ? Firearm->GetRecoilRecoveryFraction() : 0.0f;
+			RecoverableRecoilPitch = AccumulatedRecoilPitch * RecoveryFraction;
+			AccumulatedRecoilPitch -= RecoverableRecoilPitch;
+			bIsRecoveringRecoil = RecoverableRecoilPitch > 0.01f;
+		}
+
+		return;
+	}
+
+	if (bIsRecoveringRecoil && RecoverableRecoilPitch > 0.01f)
+	{
+		APawn* OwnerPawn = Cast<APawn>(GetOwner());
+		if (!OwnerPawn)
+		{
+			return;
+		}
+
+		const float RecoveryStep = RecoverableRecoilPitch * FMath::Clamp(RecoilRecoveryInterpSpeed * DeltaTime, 0.0f, 1.0f);
+		OwnerPawn->AddControllerPitchInput(RecoveryStep);
+		RecoverableRecoilPitch -= RecoveryStep;
+
+		if (RecoverableRecoilPitch <= 0.01f)
+		{
+			RecoverableRecoilPitch = 0.0f;
+			bIsRecoveringRecoil = false;
+		}
+	}
+}
+
 void UBlackoutCombatComponent::ResetSpread()
 {
 	if (UWorld* World = GetWorld())
@@ -970,4 +1048,10 @@ void UBlackoutCombatComponent::ResetSpread()
 
 	const ABOFirearm* Firearm = GetEquippedFirearm();
 	CurrentSpreadDegrees = Firearm ? Firearm->GetBaseSpreadDegrees() : 0.0f;
+
+	PendingRecoilPitch = 0.0f;
+	PendingRecoilYaw = 0.0f;
+	AccumulatedRecoilPitch = 0.0f;
+	RecoverableRecoilPitch = 0.0f;
+	bIsRecoveringRecoil = false;
 }

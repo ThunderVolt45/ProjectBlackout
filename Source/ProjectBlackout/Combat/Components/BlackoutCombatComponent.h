@@ -25,6 +25,7 @@ public:
 	UBlackoutCombatComponent();
 	
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 	UFUNCTION(BlueprintCallable, Category = "Blackout|Combat")
 	void InitializeLoadoutFromCharacterData(const UBOCharacterData* CharacterData);
@@ -184,6 +185,14 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Blackout|Combat")
 	FName EquippedWeaponSocketName = TEXT("WeaponSocket");
 
+	/** 반동이 목표 값에 도달하는 보간 속도. 클수록 즉각적. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Blackout|Combat|Recoil", meta = (ClampMin = 1.f))
+	float RecoilInterpSpeed = 15.0f;
+
+	/** 반동 종료 후 카메라가 되돌아오는 보간 속도. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Blackout|Combat|Recoil", meta = (ClampMin = 1.f))
+	float RecoilRecoveryInterpSpeed = 8.0f;
+
 private:
 	ABOWeaponBase* SpawnWeaponActor(TSubclassOf<ABOWeaponBase> WeaponClass);
 	void RefreshWeaponAttachments() const;
@@ -228,8 +237,15 @@ private:
 	void AccumulateSpread();
 	void ApplyRecoil();
 	void TickSpreadRecovery();
+	void TickRecoil(float DeltaTime);
 	void ResetSpread();
 
 	float CurrentSpreadDegrees = 0.0f;
 	FTimerHandle SpreadRecoveryTimerHandle;
+
+	float PendingRecoilPitch = 0.0f;
+	float PendingRecoilYaw = 0.0f;
+	float AccumulatedRecoilPitch = 0.0f;
+	float RecoverableRecoilPitch = 0.0f;
+	bool bIsRecoveringRecoil = false;
 };

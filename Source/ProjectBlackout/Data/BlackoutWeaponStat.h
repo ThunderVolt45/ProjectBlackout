@@ -94,6 +94,14 @@ struct PROJECTBLACKOUT_API FBlackoutFirearmStat : public FBlackoutWeaponStat
 	/** 발사 1회당 적용되는 수평 반동의 최대 절댓값 (도). 이 값의 ±범위 안에서 무작위 적용됩니다. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Blackout|Recoil", meta = (ClampMin = 0.f))
 	float HorizontalRecoilRange = 0.4f;
+
+	/** 반동으로 인한 카메라 수직 상승 최대 각도 (도). */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Blackout|Recoil", meta = (ClampMin = 0.f))
+	float MaxRecoilPitchDegrees = 15.0f;
+
+	/** 반동 종료 후 자동으로 되돌아오는 비율 (0=되돌림 없음, 1=전부 되돌림). */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Blackout|Recoil", meta = (ClampMin = 0.f, ClampMax = 1.f))
+	float RecoilRecoveryFraction = 0.4f;
 };
 
 /**

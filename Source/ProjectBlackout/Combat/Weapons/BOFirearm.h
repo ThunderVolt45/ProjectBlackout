@@ -78,6 +78,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Blackout|Combat")
 	float GetHorizontalRecoilRange() const;
 
+	UFUNCTION(BlueprintCallable, Category = "Blackout|Combat")
+	float GetMaxRecoilPitchDegrees() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Blackout|Combat")
+	float GetRecoilRecoveryFraction() const;
+
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Blackout|Combat")
 	TObjectPtr<UNiagaraComponent> MuzzleFlash;
