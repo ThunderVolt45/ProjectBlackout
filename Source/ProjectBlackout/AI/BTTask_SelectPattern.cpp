@@ -15,6 +15,8 @@ UBTTask_SelectPattern::UBTTask_SelectPattern()
 
 EBTNodeResult::Type UBTTask_SelectPattern::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
+	//UE_LOG(LogTemp, Warning, TEXT("Pattern changed"));
+	
 	if (!PatternData)
 	{
 		UE_LOG(LogSelectPattern, Error, TEXT("PatternData가 설정되지 않았습니다."));
@@ -54,6 +56,11 @@ EBTNodeResult::Type UBTTask_SelectPattern::ExecuteTask(UBehaviorTreeComponent& O
 		if (MaxDistanceKey.SelectedKeyName != NAME_None)
 		{
 			BB->SetValueAsFloat(MaxDistanceKey.SelectedKeyName, Entry->MaxDistance);
+		}
+
+		if (bIsChasingKey.SelectedKeyName != NAME_None)
+		{
+			BB->SetValueAsBool(bIsChasingKey.SelectedKeyName, DistanceBTWActors > Entry->MaxDistance);
 		}
 		break;
 	}
