@@ -56,6 +56,6 @@ classDiagram
 ## 구현 노트
 
 - `ABlackoutGameMode`: 로비(`ABlackoutLobbyGameMode`)·전투(`ABlackoutBattleGameMode`)의 공통 베이스. 파티 전멸 판정·PostLogin 훅만 제공.
-- `ABlackoutPlayerState`: ASC와 현재 소모품 소지 수량의 소유 주체. 소모품 아이콘·초기/최대 수량·회복 수치 같은 정적 정의는 `DT_ConsumableStats`가 소유하고, PlayerState는 복제 대상인 현재 수량만 관리합니다.
+- `ABlackoutPlayerState`: ASC와 현재 소모품 소지 수량의 소유 주체. 소모품 아이콘·초기/최대 수량·회복/버프 수치 같은 정적 정의는 `UBOConsumableData`가 소유하고, PlayerState는 복제 대상인 현재 수량만 관리합니다.
 - `ABlackoutPlayerController`: 관전 전환(`ChangeState(NAME_Spectating)`) 및 클라 RPC 진입점.
 - `ABlackoutGameState`: `DestroyedPillarIds` Phase C 회피 난이도 로직 반영(TDD §8).

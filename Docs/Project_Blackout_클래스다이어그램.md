@@ -182,7 +182,7 @@ classDiagram
     UPrimaryDataAsset <|-- UBOCharacterData
     UPrimaryDataAsset <|-- UBOMinionData
     UPrimaryDataAsset <|-- UBOBossData
-    UDataTable ..> FBlackoutConsumableStat : row type
+    UPrimaryDataAsset <|-- UBOConsumableData
 
     class UBOCharacterData {
         +float InitialHealth
@@ -208,6 +208,21 @@ classDiagram
         +FMinionSpawnTable SpawnWeights
     }
 
+    class UBOConsumableData {
+        <<PrimaryDataAsset>>
+        +FGameplayTag ConsumableTag
+        +FText DisplayName
+        +TSoftObjectPtr~UTexture2D~ Icon
+        +int32 InitialCount
+        +int32 MaxCount
+        +float Cooldown
+        +TSubclassOf~UGameplayAbility~ UseAbility
+        +TSubclassOf~UGameplayEffect~ GameplayEffect
+        +float HealAmount
+        +float Duration
+        +TMap~FGameplayTag, float~ EffectMagnitudes
+    }
+
     class DT_WeaponStats {
         <<DataTable>>
         +float BaseDamage
@@ -216,21 +231,10 @@ classDiagram
         +float SplashRadius
     }
 
-    class FBlackoutConsumableStat {
-        <<DT_ConsumableStats Row>>
-        +FGameplayTag ConsumableTag
-        +TSoftObjectPtr~UTexture2D~ Icon
-        +int32 InitialCount
-        +int32 MaxCount
-        +float HealAmount
-        +float Duration
-        +float Cooldown
-    }
-
     note for UBOCharacterData "GrantedAbilities: TArray<TSubclassOf<UGameplayAbility>>"
     note for UBOMinionData "AbilityDamageMap: TMap<FGameplayTag, float>"
     note for UBOBossData "AbilityDamageMap: TMap<FGameplayTag, float>"
-    note for FBlackoutConsumableStat "정적 소모품 표시/효과 수치. 현재 소지량은 PlayerState가 복제"
+    note for UBOConsumableData "소모품별 표시/효과 정의. 현재 소지량은 PlayerState가 복제"
 ```
 
 ---

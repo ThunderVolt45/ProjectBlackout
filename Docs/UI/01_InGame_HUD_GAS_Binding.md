@@ -17,7 +17,7 @@ classDiagram
     UUserWidget <|-- UBlackoutConsumableSlotsWidget
     UUserWidget <|-- UBlackoutConsumableSlotWidget
     UObject <|-- UBlackoutHUDWidgetController
-    UDataTable ..> FBlackoutConsumableStat : row type
+    UPrimaryDataAsset <|-- UBOConsumableData
 
     IAbilitySystemInterface <|.. ABlackoutPlayerState
 
@@ -55,7 +55,7 @@ classDiagram
         -TWeakObjectPtr~UBlackoutAmmoAttributeSet~ AmmoAttributeSet
         -TWeakObjectPtr~UBlackoutCombatComponent~ CombatComponent
         -TWeakObjectPtr~UBlackoutImpactIndicatorComponent~ ImpactIndicatorComponent
-        -UDataTable* ConsumableStatsTable
+        -TArray~UBOConsumableData*~ ConsumableDefinitions
         +Initialize(APlayerController*) void
         +BindCallbacksToDependencies() void
         +BroadcastInitialValues() void
@@ -69,6 +69,7 @@ classDiagram
         -HandleAmmoChanged(FOnAttributeChangeData) void
         -HandleConsumablesChanged(int32 BloodRootCount, int32 GulSerumCount) void
         -MakeConsumableSlotData(FGameplayTag, int32) FBlackoutConsumableSlotData
+        -FindConsumableData(FGameplayTag) UBOConsumableData*
         -HandleEquippedWeaponChanged(ABOWeaponBase*) void
         -HandleGameplayTagChanged(FGameplayTag, int32) void
     }
@@ -119,6 +120,7 @@ classDiagram
         <<Struct>>
         +FGameplayTag ConsumableTag
         +UTexture2D* Icon
+        +FText DisplayName
         +int32 Count
         +int32 MaxCount
         +float HealAmount
@@ -127,15 +129,19 @@ classDiagram
         +bool bIsAvailable
     }
 
-    class FBlackoutConsumableStat {
-        <<Struct — DT_ConsumableStats 행>>
+    class UBOConsumableData {
+        <<PrimaryDataAsset>>
         +FGameplayTag ConsumableTag
+        +FText DisplayName
         +TSoftObjectPtr~UTexture2D~ Icon
         +int32 InitialCount
         +int32 MaxCount
+        +float Cooldown
+        +TSubclassOf~UGameplayAbility~ UseAbility
+        +TSubclassOf~UGameplayEffect~ GameplayEffect
         +float HealAmount
         +float Duration
-        +float Cooldown
+        +TMap~FGameplayTag, float~ EffectMagnitudes
     }
 
     class ABlackoutPlayerController {
@@ -215,7 +221,7 @@ classDiagram
     UBlackoutHUDWidgetController --> UBlackoutPlayerAttributeSet : reads Stamina
     UBlackoutHUDWidgetController --> UBlackoutAmmoAttributeSet : reads Ammo
     UBlackoutHUDWidgetController --> ABOWeaponBase : reads display data
-    UBlackoutHUDWidgetController --> FBlackoutConsumableStat : reads icon/tuning
+    UBlackoutHUDWidgetController --> UBOConsumableData : reads icon/tuning
     UBlackoutHUDWidgetController --> FBlackoutConsumableSlotData : builds display data
     UBlackoutConsumableSlotWidget --> FBlackoutConsumableSlotData : renders
 ```
@@ -232,7 +238,7 @@ sequenceDiagram
     participant ASC as UAbilitySystemComponent
     participant Combat as UBlackoutCombatComponent
     participant Widget as UBlackoutHUDWidget
-    participant ConsumableDT as DT_ConsumableStats
+    participant ConsumableDA as UBOConsumableData
 
     PC->>HUD: InitHUD(PC)
     HUD->>Widget: CreateWidget / AddToViewport
@@ -242,7 +248,7 @@ sequenceDiagram
     WC->>ASC: RegisterGameplayTagEvent(...)
     WC->>Combat: OnEquippedWeaponChanged 바인딩
     WC->>PS: OnConsumableCountsChanged 바인딩
-    WC->>ConsumableDT: BloodRoot / GulSerum 정적 표시 데이터 조회
+    WC->>ConsumableDA: BloodRoot / GulSerum 정적 표시 데이터 조회
     WC->>Widget: BroadcastInitialValues()
     ASC-->>WC: Health / Stamina / Ammo 변경
     PS-->>WC: BloodRoot / GulSerum 수량 변경
@@ -260,7 +266,7 @@ sequenceDiagram
 - **현재 무기 표시**: 장착 무기 이름, 아이콘, 무기 슬롯은 `UBlackoutCombatComponent::OnEquippedWeaponChanged`에서 갱신합니다.
 - **크로스헤어 선택**: `DT_WeaponStats`의 `CrosshairType`(0~5)을 `ABOWeaponBase`가 캐시하고, `UBlackoutHUDWidgetController::OnAimingChanged`가 조준 상태와 함께 현재 장착 무기의 타입을 `UBlackoutHUDWidget::ReceiveAimingChanged`로 전달합니다.
 - **탄약 표시 전환**: 현재 슬롯이 주무기면 Primary 어트리뷰트, 보조무기면 Secondary 어트리뷰트를 표시합니다. 근접무기처럼 탄약이 없으면 `UW_AmmoDisplay`를 숨기거나 비활성화합니다.
-- **소모품 표시**: 현재 소지 수량은 `ABlackoutPlayerState`의 Replicated 프로퍼티가 소유하고, 아이콘·최대 수량·회복량·지속시간·쿨다운은 `DT_ConsumableStats`의 `FBlackoutConsumableStat` 행에서 조회합니다.
-- **소모품 슬롯 데이터**: `UBlackoutHUDWidgetController`는 `PlayerState` 수량과 `DT_ConsumableStats` 정적 데이터를 합쳐 `FBlackoutConsumableSlotData`를 만들고, `UBlackoutConsumableSlotsWidget`은 이를 하위 슬롯에 전달합니다. 슬롯 위젯은 ASC/DataTable을 직접 조회하지 않습니다.
+- **소모품 표시**: 현재 소지 수량은 `ABlackoutPlayerState`의 Replicated 프로퍼티가 소유하고, 아이콘·최대 수량·회복량·지속시간·쿨다운은 `UBOConsumableData`에서 조회합니다.
+- **소모품 슬롯 데이터**: `UBlackoutHUDWidgetController`는 `PlayerState` 수량과 `UBOConsumableData` 정적 데이터를 합쳐 `FBlackoutConsumableSlotData`를 만들고, `UBlackoutConsumableSlotsWidget`은 이를 하위 슬롯에 전달합니다. 슬롯 위젯은 ASC/DataAsset을 직접 조회하지 않습니다.
 - **Tick 예외**: `UBlackoutHUDWidget`은 착탄 인디케이터 위치/색상 갱신을 위해 Tick에서 `UBlackoutImpactIndicatorComponent`의 결과를 조회할 수 있습니다. 실제 라인트레이스/투사체 예측 계산은 전투 전용 컴포넌트가 담당하며, 다른 HUD 요소는 Tick을 사용하지 않습니다.
 - **초기값 브로드캐스트**: Delegate 바인딩 직후 현재 Attribute 값을 한 번 브로드캐스트하여 첫 프레임 빈 UI를 방지합니다.
