@@ -5,6 +5,7 @@
 #include "Components/CanvasPanelSlot.h"
 #include "Components/Image.h"
 #include "Components/Widget.h"
+#include "UI/BlackoutConsumableSlotsWidget.h"
 #include "UI/BlackoutHUDWidgetController.h"
 #include "UI/BlackoutValueBarWidget.h"
 #include "UI/BlackoutWeaponAmmoWidget.h"
@@ -52,6 +53,7 @@ void UBlackoutHUDWidget::SetWidgetController(UBlackoutHUDWidgetController* InWid
 	WidgetController->OnEquippedWeaponChanged.AddDynamic(this, &UBlackoutHUDWidget::HandleEquippedWeaponChanged);
 	WidgetController->OnAimingChanged.AddDynamic(this, &UBlackoutHUDWidget::HandleAimingChanged);
 	WidgetController->OnWeaponAmmoDisplayChanged.AddDynamic(this, &UBlackoutHUDWidget::HandleWeaponAmmoDisplayChanged);
+	WidgetController->OnConsumablesChanged.AddDynamic(this, &UBlackoutHUDWidget::HandleConsumablesChanged);
 
 	ReceiveWidgetControllerSet();
 }
@@ -69,6 +71,7 @@ void UBlackoutHUDWidget::UnbindWidgetControllerCallbacks()
 	WidgetController->OnEquippedWeaponChanged.RemoveAll(this);
 	WidgetController->OnAimingChanged.RemoveAll(this);
 	WidgetController->OnWeaponAmmoDisplayChanged.RemoveAll(this);
+	WidgetController->OnConsumablesChanged.RemoveAll(this);
 }
 
 void UBlackoutHUDWidget::UpdateImpactIndicator(const FBlackoutImpactIndicatorData& ImpactIndicatorData) const
@@ -175,4 +178,14 @@ void UBlackoutHUDWidget::HandleWeaponAmmoDisplayChanged(
 	}
 
 	ReceiveWeaponAmmoDisplayChanged(PrimaryWeaponData, SecondaryWeaponData, bPlaySwapAnimation);
+}
+
+void UBlackoutHUDWidget::HandleConsumablesChanged(int32 BloodRootCount, int32 GulSerumCount)
+{
+	if (ConsumableSlotsWidget)
+	{
+		ConsumableSlotsWidget->SetConsumableCounts(BloodRootCount, GulSerumCount);
+	}
+
+	ReceiveConsumablesChanged(BloodRootCount, GulSerumCount);
 }

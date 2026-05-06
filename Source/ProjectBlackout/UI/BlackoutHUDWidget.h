@@ -8,6 +8,7 @@
 #include "BlackoutHUDWidget.generated.h"
 
 class ABOWeaponBase;
+class UBlackoutConsumableSlotsWidget;
 class UBlackoutHUDWidgetController;
 class UBlackoutValueBarWidget;
 class UBlackoutWeaponAmmoWidget;
@@ -41,6 +42,9 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "Blackout|HUD")
 	TObjectPtr<UBlackoutWeaponAmmoWidget> AmmoWidget;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "Blackout|HUD")
+	TObjectPtr<UBlackoutConsumableSlotsWidget> ConsumableSlotsWidget;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "Blackout|HUD")
 	TObjectPtr<UWidget> ImpactIndicatorWidget;
@@ -92,6 +96,9 @@ protected:
 		const FBlackoutWeaponAmmoSlotData& SecondaryWeaponData,
 		bool bPlaySwapAnimation);
 
+	UFUNCTION(BlueprintImplementableEvent, meta = (DisplayName = "On Consumables Changed"), Category = "Blackout|HUD")
+	void ReceiveConsumablesChanged(int32 BloodRootCount, int32 GulSerumCount);
+
 private:
 	void UnbindWidgetControllerCallbacks();
 	void UpdateImpactIndicator(const FBlackoutImpactIndicatorData& ImpactIndicatorData) const;
@@ -117,4 +124,7 @@ private:
 		const FBlackoutWeaponAmmoSlotData& PrimaryWeaponData,
 		const FBlackoutWeaponAmmoSlotData& SecondaryWeaponData,
 		bool bPlaySwapAnimation);
+
+	UFUNCTION()
+	void HandleConsumablesChanged(int32 BloodRootCount, int32 GulSerumCount);
 };

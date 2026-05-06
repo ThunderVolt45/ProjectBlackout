@@ -61,6 +61,24 @@ void UBlackoutHUDWidgetController::BindCallbacksToDependencies()
 		bAttributeCallbacksBound = true;
 	}
 
+	if (ABlackoutPlayerState* BlackoutPlayerState = PlayerState.Get())
+	{
+		if (BoundPlayerState.Get() != BlackoutPlayerState)
+		{
+			if (ABlackoutPlayerState* PreviousPlayerState = BoundPlayerState.Get())
+			{
+				PreviousPlayerState->OnConsumableCountsChanged.RemoveAll(this);
+			}
+
+			BlackoutPlayerState->OnConsumableCountsChanged.AddDynamic(this, &UBlackoutHUDWidgetController::HandleConsumablesChanged);
+			BoundPlayerState = BlackoutPlayerState;
+		}
+	}
+	else
+	{
+		BO_LOG_CORE(Warning, "HUD 소모품 바인딩 보류: PlayerState가 유효하지 않습니다.");
+	}
+
 	if (UBlackoutCombatComponent* BlackoutCombatComponent = CombatComponent.Get())
 	{
 		if (BoundCombatComponent.Get() != BlackoutCombatComponent)
@@ -90,6 +108,7 @@ void UBlackoutHUDWidgetController::BroadcastInitialValues()
 	BroadcastEquippedWeapon();
 	BroadcastAiming();
 	BroadcastWeaponAmmoDisplay(false);
+	BroadcastConsumables();
 }
 
 bool UBlackoutHUDWidgetController::GetImpactIndicatorData(FBlackoutImpactIndicatorData& OutIndicatorData) const
@@ -279,6 +298,19 @@ void UBlackoutHUDWidgetController::BroadcastWeaponAmmoDisplay(bool bPlaySwapAnim
 	OnWeaponAmmoDisplayChanged.Broadcast(PrimarySlotData, SecondarySlotData, bPlaySwapAnimation);
 }
 
+void UBlackoutHUDWidgetController::BroadcastConsumables() const
+{
+	const ABlackoutPlayerState* BlackoutPlayerState = PlayerState.Get();
+	if (!BlackoutPlayerState)
+	{
+		BO_LOG_CORE(Error, "HUD 소모품 조회 실패: PlayerState가 유효하지 않습니다.");
+		OnConsumablesChanged.Broadcast(0, 0);
+		return;
+	}
+
+	OnConsumablesChanged.Broadcast(BlackoutPlayerState->BloodRootCount, BlackoutPlayerState->GulSerumCount);
+}
+
 FBlackoutWeaponAmmoSlotData UBlackoutHUDWidgetController::MakeWeaponAmmoSlotData(ABOWeaponBase* Weapon, FGameplayTag WeaponSlotTag, bool bIsEquipped) const
 {
 	FBlackoutWeaponAmmoSlotData SlotData;
@@ -369,4 +401,9 @@ void UBlackoutHUDWidgetController::HandleAmmoChanged(const FOnAttributeChangeDat
 {
 	BroadcastAmmo();
 	BroadcastWeaponAmmoDisplay(false);
+}
+
+void UBlackoutHUDWidgetController::HandleConsumablesChanged(int32 BloodRootCount, int32 GulSerumCount)
+{
+	OnConsumablesChanged.Broadcast(BloodRootCount, GulSerumCount);
 }

@@ -25,6 +25,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FBlackoutHUDAmmoChangedSignature,
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FBlackoutHUDWeaponChangedSignature, ABOWeaponBase*, EquippedWeapon, FGameplayTag, WeaponSlotTag);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FBlackoutHUDAimingChangedSignature, bool, bIsAiming, int32, CrosshairType);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FBlackoutHUDWeaponAmmoDisplayChangedSignature, const FBlackoutWeaponAmmoSlotData&, PrimaryWeaponData, const FBlackoutWeaponAmmoSlotData&, SecondaryWeaponData, bool, bPlaySwapAnimation);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FBlackoutHUDConsumablesChangedSignature, int32, BloodRootCount, int32, GulSerumCount);
 
 UCLASS(BlueprintType)
 class PROJECTBLACKOUT_API UBlackoutHUDWidgetController : public UObject
@@ -62,6 +63,9 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Blackout|HUD")
 	FBlackoutHUDWeaponAmmoDisplayChangedSignature OnWeaponAmmoDisplayChanged;
 
+	UPROPERTY(BlueprintAssignable, Category = "Blackout|HUD")
+	FBlackoutHUDConsumablesChangedSignature OnConsumablesChanged;
+
 protected:
 	UFUNCTION()
 	void HandleEquippedWeaponChanged(ABOWeaponBase* EquippedWeapon, FGameplayTag WeaponSlotTag);
@@ -77,6 +81,7 @@ private:
 	void BroadcastEquippedWeapon() const;
 	void BroadcastAiming() const;
 	void BroadcastWeaponAmmoDisplay(bool bPlaySwapAnimation) const;
+	void BroadcastConsumables() const;
 	FBlackoutWeaponAmmoSlotData MakeWeaponAmmoSlotData(ABOWeaponBase* Weapon, FGameplayTag WeaponSlotTag, bool bIsEquipped) const;
 	float GetAttributeValue(const FGameplayAttribute& Attribute) const;
 	FGameplayTag GetEquippedWeaponSlotTag() const;
@@ -88,6 +93,9 @@ private:
 	void HandleMaxStaminaChanged(const FOnAttributeChangeData& ChangeData);
 	void HandleAmmoChanged(const FOnAttributeChangeData& ChangeData);
 
+	UFUNCTION()
+	void HandleConsumablesChanged(int32 BloodRootCount, int32 GulSerumCount);
+
 	TWeakObjectPtr<ABlackoutPlayerController> PlayerController;
 	TWeakObjectPtr<ABlackoutPlayerState> PlayerState;
 	TWeakObjectPtr<UAbilitySystemComponent> AbilitySystemComponent;
@@ -97,6 +105,7 @@ private:
 	TWeakObjectPtr<UBlackoutCombatComponent> CombatComponent;
 	TWeakObjectPtr<UBlackoutImpactIndicatorComponent> ImpactIndicatorComponent;
 	TWeakObjectPtr<UBlackoutCombatComponent> BoundCombatComponent;
+	TWeakObjectPtr<ABlackoutPlayerState> BoundPlayerState;
 
 	bool bAttributeCallbacksBound = false;
 };
