@@ -2,7 +2,6 @@
 
 #include "CoreMinimal.h"
 #include "Engine/DataTable.h"
-#include "GameplayTagContainer.h"
 #include "BlackoutWeaponStat.generated.h"
 
 class UTexture2D;
@@ -14,10 +13,6 @@ USTRUCT(BlueprintType)
 struct PROJECTBLACKOUT_API FBlackoutWeaponStat : public FTableRowBase
 {
 	GENERATED_BODY()
-
-	/** 무기 식별 태그 (e.g. Weapon.Primary.Rifle) */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Blackout|Weapon")
-	FGameplayTag WeaponTag;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Blackout|Weapon", meta = (ClampMin = 0.f))
 	float BaseDamage = 20.f;
