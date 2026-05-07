@@ -29,6 +29,7 @@ namespace BlackoutGameplayTags
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Data_Consumable_HealAmount);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Data_Consumable_Duration);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Data_Consumable_Cooldown);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Data_Consumable_StaminaCostMultiplier);
 
 	// ─── Consumables ──────────────────────────────────────────────────────────
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Item_Consumable_BloodRoot);

@@ -19,6 +19,8 @@ class PROJECTBLACKOUT_API UBlackoutAbilitySystemComponent : public UAbilitySyste
 	GENERATED_BODY()
 
 public:
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
 	/**
 	 * 서버 전용. CharacterData의 GrantedAbilities 배열을 순회해 ASC에 일괄 부여.
 	 * ABlackoutPlayerCharacter::PossessedBy, ABlackoutEnemyCharacter::BeginPlay 에서 호출.
@@ -51,6 +53,13 @@ public:
 	 */
 	void NotifyStaminaSpent();
 
+	/**
+	 * 서버 전용. 굴 세럼 같은 임시 효과가 적용하는 스태미나 소비 배율입니다.
+	 */
+	void ApplyTemporaryStaminaCostMultiplier(float NewMultiplier, float Duration);
+
+	float GetStaminaCostMultiplier() const { return StaminaCostMultiplier; }
+
 protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Blackout|Stamina")
 	float StaminaRegenDelay = 1.2f;
@@ -66,7 +75,12 @@ private:
 	void HandleStaminaRegenTick();
 	void StopStaminaRegen();
 	bool CanRecoverStamina() const;
+	void ClearStaminaCostMultiplier();
 
 	FTimerHandle StaminaRegenDelayTimerHandle;
 	FTimerHandle StaminaRegenTickTimerHandle;
+	FTimerHandle StaminaCostMultiplierTimerHandle;
+
+	UPROPERTY(Replicated)
+	float StaminaCostMultiplier = 1.0f;
 };

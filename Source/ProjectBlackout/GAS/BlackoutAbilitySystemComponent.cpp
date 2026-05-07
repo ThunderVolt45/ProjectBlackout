@@ -7,6 +7,14 @@
 #include "GameplayEffect.h"
 #include "GameplayTags/BlackoutGameplayTags.h"
 #include "GAS/Attributes/BlackoutPlayerAttributeSet.h"
+#include "Net/UnrealNetwork.h"
+
+void UBlackoutAbilitySystemComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(UBlackoutAbilitySystemComponent, StaminaCostMultiplier);
+}
 
 void UBlackoutAbilitySystemComponent::GiveDefaultAbilities(const TArray<TSubclassOf<UGameplayAbility>>& Abilities)
 {
@@ -167,6 +175,7 @@ void UBlackoutAbilitySystemComponent::ClearAllAbilitiesAndEffects()
 	}
 
 	StopStaminaRegen();
+	ClearStaminaCostMultiplier();
 	ClearAllAbilities();
 
 	// 모든 활성 GE 제거 (풀 반환 시 상태이상/쿨다운 초기화)
@@ -195,6 +204,36 @@ void UBlackoutAbilitySystemComponent::NotifyStaminaSpent()
 		&UBlackoutAbilitySystemComponent::StartStaminaRegen,
 		FMath::Max(0.0f, StaminaRegenDelay),
 		false);
+}
+
+void UBlackoutAbilitySystemComponent::ApplyTemporaryStaminaCostMultiplier(float NewMultiplier, float Duration)
+{
+	if (!IsOwnerActorAuthoritative())
+	{
+		return;
+	}
+
+	StaminaCostMultiplier = FMath::Clamp(NewMultiplier, 0.0f, 1.0f);
+
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(StaminaCostMultiplierTimerHandle);
+
+		if (Duration > 0.0f)
+		{
+			World->GetTimerManager().SetTimer(
+				StaminaCostMultiplierTimerHandle,
+				this,
+				&UBlackoutAbilitySystemComponent::ClearStaminaCostMultiplier,
+				Duration,
+				false);
+		}
+	}
+
+	BO_LOG_GAS(Log, "스태미나 소비 배율 적용: Owner=%s Multiplier=%.2f Duration=%.2f",
+		*GetNameSafe(GetOwner()),
+		StaminaCostMultiplier,
+		Duration);
 }
 
 void UBlackoutAbilitySystemComponent::StartStaminaRegen()
@@ -253,6 +292,17 @@ void UBlackoutAbilitySystemComponent::StopStaminaRegen()
 		World->GetTimerManager().ClearTimer(StaminaRegenDelayTimerHandle);
 		World->GetTimerManager().ClearTimer(StaminaRegenTickTimerHandle);
 	}
+}
+
+void UBlackoutAbilitySystemComponent::ClearStaminaCostMultiplier()
+{
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(StaminaCostMultiplierTimerHandle);
+	}
+
+	StaminaCostMultiplier = 1.0f;
+	BO_LOG_GAS(Log, "스태미나 소비 배율 복구: Owner=%s", *GetNameSafe(GetOwner()));
 }
 
 bool UBlackoutAbilitySystemComponent::CanRecoverStamina() const

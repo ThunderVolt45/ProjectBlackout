@@ -1,10 +1,13 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GameplayTagContainer.h"
 #include "GAS/Abilities/BlackoutGameplayAbility.h"
+#include "TimerManager.h"
 #include "BlackoutGA_UseConsumable.generated.h"
 
 class UBOConsumableData;
+class UAbilitySystemComponent;
 
 /**
  * 소모품 사용 공통 어빌리티.
@@ -29,9 +32,27 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Blackout|Consumable", meta = (ClampMin = 1))
 	int32 ConsumeAmount = 1;
 
+	/** 블러드 루트 지속 회복 틱 간격입니다. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Blackout|Consumable", meta = (ClampMin = 0.1))
+	float BloodRootHealTickInterval = 1.0f;
+
 	UFUNCTION(BlueprintCallable, Category = "Blackout|Consumable")
 	const UBOConsumableData* ResolveConsumableData();
 
+	void ApplyBuiltInConsumableEffect(const UBOConsumableData* UsedConsumableData);
+	void ApplyConfiguredGameplayEffect(const UBOConsumableData* UsedConsumableData);
+	void StartBloodRootHealOverTime(const UBOConsumableData* UsedConsumableData);
+	void HandleBloodRootHealTick();
+	void ApplyGulSerumBuff(const UBOConsumableData* UsedConsumableData);
+	float GetEffectMagnitudeOrDefault(const UBOConsumableData* UsedConsumableData, FGameplayTag MagnitudeTag, float DefaultValue) const;
+	bool IsConsumableCooldownReady(const UBOConsumableData* UsedConsumableData) const;
+	void StartConsumableCooldown(const UBOConsumableData* UsedConsumableData);
+
 	UFUNCTION(BlueprintImplementableEvent, meta = (DisplayName = "On Consumable Used"), Category = "Blackout|Consumable")
 	void ReceiveConsumableUsed(const UBOConsumableData* UsedConsumableData);
+
+	FTimerHandle BloodRootHealTimerHandle;
+	float RemainingBloodRootHealAmount = 0.0f;
+	float BloodRootHealAmountPerTick = 0.0f;
+	float ConsumableCooldownEndTime = 0.0f;
 };
