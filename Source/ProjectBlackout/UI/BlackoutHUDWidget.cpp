@@ -54,6 +54,7 @@ void UBlackoutHUDWidget::SetWidgetController(UBlackoutHUDWidgetController* InWid
 	WidgetController->OnAimingChanged.AddDynamic(this, &UBlackoutHUDWidget::HandleAimingChanged);
 	WidgetController->OnWeaponAmmoDisplayChanged.AddDynamic(this, &UBlackoutHUDWidget::HandleWeaponAmmoDisplayChanged);
 	WidgetController->OnConsumablesChanged.AddDynamic(this, &UBlackoutHUDWidget::HandleConsumablesChanged);
+	WidgetController->OnConsumableSlotsChanged.AddDynamic(this, &UBlackoutHUDWidget::HandleConsumableSlotsChanged);
 
 	ReceiveWidgetControllerSet();
 }
@@ -72,6 +73,7 @@ void UBlackoutHUDWidget::UnbindWidgetControllerCallbacks()
 	WidgetController->OnAimingChanged.RemoveAll(this);
 	WidgetController->OnWeaponAmmoDisplayChanged.RemoveAll(this);
 	WidgetController->OnConsumablesChanged.RemoveAll(this);
+	WidgetController->OnConsumableSlotsChanged.RemoveAll(this);
 }
 
 void UBlackoutHUDWidget::UpdateImpactIndicator(const FBlackoutImpactIndicatorData& ImpactIndicatorData) const
@@ -182,10 +184,17 @@ void UBlackoutHUDWidget::HandleWeaponAmmoDisplayChanged(
 
 void UBlackoutHUDWidget::HandleConsumablesChanged(int32 BloodRootCount, int32 GulSerumCount)
 {
+	ReceiveConsumablesChanged(BloodRootCount, GulSerumCount);
+}
+
+void UBlackoutHUDWidget::HandleConsumableSlotsChanged(
+	const FBlackoutConsumableSlotData& BloodRootData,
+	const FBlackoutConsumableSlotData& GulSerumData)
+{
 	if (ConsumableSlotsWidget)
 	{
-		ConsumableSlotsWidget->SetConsumableCounts(BloodRootCount, GulSerumCount);
+		ConsumableSlotsWidget->SetConsumableSlotData(BloodRootData, GulSerumData);
 	}
 
-	ReceiveConsumablesChanged(BloodRootCount, GulSerumCount);
+	ReceiveConsumableSlotsChanged(BloodRootData, GulSerumData);
 }

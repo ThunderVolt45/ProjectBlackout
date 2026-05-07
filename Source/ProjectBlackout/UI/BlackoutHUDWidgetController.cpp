@@ -7,6 +7,8 @@
 #include "Combat/Weapons/BOFirearm.h"
 #include "Combat/Weapons/BOWeaponBase.h"
 #include "Core/BlackoutLog.h"
+#include "Data/BOCharacterData.h"
+#include "Data/BOConsumableData.h"
 #include "Framework/BlackoutPlayerController.h"
 #include "Framework/BlackoutPlayerState.h"
 #include "GAS/Attributes/BlackoutAmmoAttributeSet.h"
@@ -305,10 +307,42 @@ void UBlackoutHUDWidgetController::BroadcastConsumables() const
 	{
 		BO_LOG_CORE(Error, "HUD 소모품 조회 실패: PlayerState가 유효하지 않습니다.");
 		OnConsumablesChanged.Broadcast(0, 0);
+		OnConsumableSlotsChanged.Broadcast(FBlackoutConsumableSlotData(), FBlackoutConsumableSlotData());
 		return;
 	}
 
 	OnConsumablesChanged.Broadcast(BlackoutPlayerState->BloodRootCount, BlackoutPlayerState->GulSerumCount);
+	BroadcastConsumableSlots(BlackoutPlayerState->BloodRootCount, BlackoutPlayerState->GulSerumCount);
+}
+
+void UBlackoutHUDWidgetController::BroadcastConsumableSlots(int32 BloodRootCount, int32 GulSerumCount) const
+{
+	FBlackoutConsumableSlotData BloodRootData;
+	FBlackoutConsumableSlotData GulSerumData;
+	BloodRootData.CurrentCount = BloodRootCount;
+	GulSerumData.CurrentCount = GulSerumCount;
+
+	const ABlackoutPlayerController* BlackoutPlayerController = PlayerController.Get();
+	const ABlackoutPlayerCharacter* PlayerCharacter = BlackoutPlayerController ? Cast<ABlackoutPlayerCharacter>(BlackoutPlayerController->GetPawn()) : nullptr;
+	const UBOCharacterData* CharacterData = PlayerCharacter ? PlayerCharacter->GetCharacterData() : nullptr;
+	if (!CharacterData)
+	{
+		BO_LOG_CORE(Warning, "HUD 소모품 아이콘 조회 실패: CharacterData가 유효하지 않습니다.");
+		OnConsumableSlotsChanged.Broadcast(BloodRootData, GulSerumData);
+		return;
+	}
+
+	if (CharacterData->ConsumableSlots.IsValidIndex(0))
+	{
+		BloodRootData = MakeConsumableSlotData(CharacterData->ConsumableSlots[0]);
+	}
+
+	if (CharacterData->ConsumableSlots.IsValidIndex(1))
+	{
+		GulSerumData = MakeConsumableSlotData(CharacterData->ConsumableSlots[1]);
+	}
+
+	OnConsumableSlotsChanged.Broadcast(BloodRootData, GulSerumData);
 }
 
 FBlackoutWeaponAmmoSlotData UBlackoutHUDWidgetController::MakeWeaponAmmoSlotData(ABOWeaponBase* Weapon, FGameplayTag WeaponSlotTag, bool bIsEquipped) const
@@ -345,6 +379,25 @@ FBlackoutWeaponAmmoSlotData UBlackoutHUDWidgetController::MakeWeaponAmmoSlotData
 	}
 
 	SlotData.TotalAmmo = SlotData.CurrentAmmo + SlotData.ReserveAmmo;
+	return SlotData;
+}
+
+FBlackoutConsumableSlotData UBlackoutHUDWidgetController::MakeConsumableSlotData(UBOConsumableData* ConsumableData) const
+{
+	FBlackoutConsumableSlotData SlotData;
+	SlotData.ConsumableData = ConsumableData;
+	SlotData.bIsValid = IsValid(ConsumableData);
+
+	if (!SlotData.bIsValid)
+	{
+		return SlotData;
+	}
+
+	SlotData.ConsumableTag = ConsumableData->ConsumableTag;
+	SlotData.CurrentCount = PlayerState.IsValid() ? PlayerState->GetConsumableCount(ConsumableData->ConsumableTag) : 0;
+	SlotData.MaxCount = ConsumableData->MaxCount;
+	SlotData.Icon = ConsumableData->Icon.LoadSynchronous();
+
 	return SlotData;
 }
 
@@ -406,4 +459,5 @@ void UBlackoutHUDWidgetController::HandleAmmoChanged(const FOnAttributeChangeDat
 void UBlackoutHUDWidgetController::HandleConsumablesChanged(int32 BloodRootCount, int32 GulSerumCount)
 {
 	OnConsumablesChanged.Broadcast(BloodRootCount, GulSerumCount);
+	BroadcastConsumableSlots(BloodRootCount, GulSerumCount);
 }

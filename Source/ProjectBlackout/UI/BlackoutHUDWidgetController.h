@@ -5,6 +5,7 @@
 #include "AttributeSet.h"
 #include "GameplayEffectTypes.h"
 #include "GameplayTagContainer.h"
+#include "UI/BlackoutConsumableTypes.h"
 #include "UI/BlackoutHUDTypes.h"
 #include "UI/BlackoutWeaponAmmoTypes.h"
 #include "UObject/Object.h"
@@ -19,6 +20,7 @@ class UBlackoutBaseAttributeSet;
 class UBlackoutCombatComponent;
 class UBlackoutImpactIndicatorComponent;
 class UBlackoutPlayerAttributeSet;
+class UBOConsumableData;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FBlackoutHUDValueChangedSignature, float, CurrentValue, float, MaxValue);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FBlackoutHUDAmmoChangedSignature, int32, ClipAmmo, int32, MaxClipAmmo, int32, ReserveAmmo);
@@ -26,6 +28,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FBlackoutHUDWeaponChangedSignature,
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FBlackoutHUDAimingChangedSignature, bool, bIsAiming, int32, CrosshairType);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FBlackoutHUDWeaponAmmoDisplayChangedSignature, const FBlackoutWeaponAmmoSlotData&, PrimaryWeaponData, const FBlackoutWeaponAmmoSlotData&, SecondaryWeaponData, bool, bPlaySwapAnimation);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FBlackoutHUDConsumablesChangedSignature, int32, BloodRootCount, int32, GulSerumCount);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FBlackoutHUDConsumableSlotsChangedSignature, const FBlackoutConsumableSlotData&, BloodRootData, const FBlackoutConsumableSlotData&, GulSerumData);
 
 UCLASS(BlueprintType)
 class PROJECTBLACKOUT_API UBlackoutHUDWidgetController : public UObject
@@ -66,6 +69,9 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Blackout|HUD")
 	FBlackoutHUDConsumablesChangedSignature OnConsumablesChanged;
 
+	UPROPERTY(BlueprintAssignable, Category = "Blackout|HUD")
+	FBlackoutHUDConsumableSlotsChangedSignature OnConsumableSlotsChanged;
+
 protected:
 	UFUNCTION()
 	void HandleEquippedWeaponChanged(ABOWeaponBase* EquippedWeapon, FGameplayTag WeaponSlotTag);
@@ -82,7 +88,9 @@ private:
 	void BroadcastAiming() const;
 	void BroadcastWeaponAmmoDisplay(bool bPlaySwapAnimation) const;
 	void BroadcastConsumables() const;
+	void BroadcastConsumableSlots(int32 BloodRootCount, int32 GulSerumCount) const;
 	FBlackoutWeaponAmmoSlotData MakeWeaponAmmoSlotData(ABOWeaponBase* Weapon, FGameplayTag WeaponSlotTag, bool bIsEquipped) const;
+	FBlackoutConsumableSlotData MakeConsumableSlotData(UBOConsumableData* ConsumableData) const;
 	float GetAttributeValue(const FGameplayAttribute& Attribute) const;
 	FGameplayTag GetEquippedWeaponSlotTag() const;
 	int32 GetEquippedCrosshairType() const;

@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
 #include "GameplayTagContainer.h"
+#include "UI/BlackoutConsumableTypes.h"
 #include "UI/BlackoutHUDTypes.h"
 #include "UI/BlackoutWeaponAmmoTypes.h"
 #include "BlackoutHUDWidget.generated.h"
@@ -99,6 +100,11 @@ protected:
 	UFUNCTION(BlueprintImplementableEvent, meta = (DisplayName = "On Consumables Changed"), Category = "Blackout|HUD")
 	void ReceiveConsumablesChanged(int32 BloodRootCount, int32 GulSerumCount);
 
+	UFUNCTION(BlueprintImplementableEvent, meta = (DisplayName = "On Consumable Slots Changed"), Category = "Blackout|HUD")
+	void ReceiveConsumableSlotsChanged(
+		const FBlackoutConsumableSlotData& BloodRootData,
+		const FBlackoutConsumableSlotData& GulSerumData);
+
 private:
 	void UnbindWidgetControllerCallbacks();
 	void UpdateImpactIndicator(const FBlackoutImpactIndicatorData& ImpactIndicatorData) const;
@@ -127,4 +133,9 @@ private:
 
 	UFUNCTION()
 	void HandleConsumablesChanged(int32 BloodRootCount, int32 GulSerumCount);
+
+	UFUNCTION()
+	void HandleConsumableSlotsChanged(
+		const FBlackoutConsumableSlotData& BloodRootData,
+		const FBlackoutConsumableSlotData& GulSerumData);
 };
