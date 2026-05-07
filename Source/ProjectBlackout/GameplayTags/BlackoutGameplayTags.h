@@ -13,6 +13,11 @@ namespace BlackoutGameplayTags
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Sprinting);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Attacking);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_UseConsumable);
+	
+	// ─── Character Abilities ───────────────────────────────────────────────────
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Player_Dodge);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Player_Sprint);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Player_UseConsumable);
 
 	// ─── Character Class ───────────────────────────────────────────────────────
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Character_Class_Assault);
@@ -82,4 +87,7 @@ namespace BlackoutGameplayTags
 	// ─── Attack Events ────────────────────────────────────────────────────
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Event_Enemy_Attack_SweepStart);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Event_Enemy_Attack_SweepEnd);
+
+	// ─── Montage Events ───────────────────────────────────────────────────
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Event_Montage_ConsumableApply);
 }
