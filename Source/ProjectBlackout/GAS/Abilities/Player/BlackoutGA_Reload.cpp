@@ -2,7 +2,6 @@
 
 #include "Abilities/Tasks/AbilityTask_WaitGameplayEvent.h"
 #include "AbilitySystemComponent.h"
-#include "AbilitySystemInterface.h"
 #include "Characters/BlackoutPlayerCharacter.h"
 #include "Combat/Components/BlackoutCombatComponent.h"
 #include "Combat/Weapons/BOFirearm.h"
@@ -17,37 +16,11 @@ UBlackoutGA_Reload::UBlackoutGA_Reload()
 	InputID = EBlackoutAbilityInputID::Reload;
 	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::LocalPredicted;
+	AbilityTags.AddTag(BlackoutGameplayTags::Ability_Player_Reload);
 	ActivationOwnedTags.AddTag(BlackoutGameplayTags::State_Reloading);
 	ActivationBlockedTags.AddTag(BlackoutGameplayTags::State_Downed);
 	ActivationBlockedTags.AddTag(BlackoutGameplayTags::State_Locked);
-}
-
-UBlackoutGA_Reload* UBlackoutGA_Reload::GetActiveReloadAbilityFromActor(const AActor* OwnerActor)
-{
-	const IAbilitySystemInterface* AbilitySystemInterface = Cast<IAbilitySystemInterface>(OwnerActor);
-	const UAbilitySystemComponent* AbilitySystemComponent = AbilitySystemInterface ? AbilitySystemInterface->GetAbilitySystemComponent() : nullptr;
-	if (!AbilitySystemComponent)
-	{
-		return nullptr;
-	}
-
-	for (const FGameplayAbilitySpec& AbilitySpec : AbilitySystemComponent->GetActivatableAbilities())
-	{
-		if (!AbilitySpec.IsActive())
-		{
-			continue;
-		}
-
-		for (UGameplayAbility* AbilityInstance : AbilitySpec.GetAbilityInstances())
-		{
-			if (UBlackoutGA_Reload* ReloadAbility = Cast<UBlackoutGA_Reload>(AbilityInstance))
-			{
-				return ReloadAbility;
-			}
-		}
-	}
-
-	return nullptr;
+	ActivationBlockedTags.AddTag(BlackoutGameplayTags::State_Attacking);
 }
 
 UAnimMontage* UBlackoutGA_Reload::ResolveReloadMontage(const ABlackoutPlayerCharacter* PlayerCharacter, const ABOFirearm* EquippedFirearm) const
