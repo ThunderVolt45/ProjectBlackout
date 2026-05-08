@@ -2,7 +2,6 @@
 
 #include "Abilities/Tasks/AbilityTask_WaitGameplayEvent.h"
 #include "AbilitySystemComponent.h"
-#include "AbilitySystemInterface.h"
 #include "Characters/BlackoutPlayerCharacter.h"
 #include "Combat/Components/BlackoutCombatComponent.h"
 #include "Combat/Weapons/BOFirearm.h"
@@ -17,36 +16,13 @@ UBlackoutGA_Reload::UBlackoutGA_Reload()
 	InputID = EBlackoutAbilityInputID::Reload;
 	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::LocalPredicted;
+	FGameplayTagContainer AssetTags;
+	AssetTags.AddTag(BlackoutGameplayTags::Ability_Player_Reload);
+	SetAssetTags(AssetTags);
+	ActivationOwnedTags.AddTag(BlackoutGameplayTags::State_Reloading);
 	ActivationBlockedTags.AddTag(BlackoutGameplayTags::State_Downed);
 	ActivationBlockedTags.AddTag(BlackoutGameplayTags::State_Locked);
-}
-
-UBlackoutGA_Reload* UBlackoutGA_Reload::GetActiveReloadAbilityFromActor(const AActor* OwnerActor)
-{
-	const IAbilitySystemInterface* AbilitySystemInterface = Cast<IAbilitySystemInterface>(OwnerActor);
-	const UAbilitySystemComponent* AbilitySystemComponent = AbilitySystemInterface ? AbilitySystemInterface->GetAbilitySystemComponent() : nullptr;
-	if (!AbilitySystemComponent)
-	{
-		return nullptr;
-	}
-
-	for (const FGameplayAbilitySpec& AbilitySpec : AbilitySystemComponent->GetActivatableAbilities())
-	{
-		if (!AbilitySpec.IsActive())
-		{
-			continue;
-		}
-
-		for (UGameplayAbility* AbilityInstance : AbilitySpec.GetAbilityInstances())
-		{
-			if (UBlackoutGA_Reload* ReloadAbility = Cast<UBlackoutGA_Reload>(AbilityInstance))
-			{
-				return ReloadAbility;
-			}
-		}
-	}
-
-	return nullptr;
+	ActivationBlockedTags.AddTag(BlackoutGameplayTags::State_Attacking);
 }
 
 UAnimMontage* UBlackoutGA_Reload::ResolveReloadMontage(const ABlackoutPlayerCharacter* PlayerCharacter, const ABOFirearm* EquippedFirearm) const
@@ -106,6 +82,7 @@ void UBlackoutGA_Reload::ActivateAbility(const FGameplayAbilitySpecHandle Handle
 	UAnimMontage* SelectedReloadMontage = ResolveReloadMontage(PlayerCharacter, EquippedFirearm);
 	CachedReloadMontage = SelectedReloadMontage;
 	bWeaponReloadAnimationTriggered = false;
+	bReloadEffectApplied = false;
 	const bool bIsTwoHanded = EquippedFirearm->UsesTwoHandedAnimation();
 
 	BO_LOG_GAS(Log,
@@ -122,6 +99,13 @@ void UBlackoutGA_Reload::ActivateAbility(const FGameplayAbilitySpecHandle Handle
 		{
 			WaitEventTask->EventReceived.AddDynamic(this, &UBlackoutGA_Reload::OnWeaponReloadStartEventReceived);
 			WaitEventTask->ReadyForActivation();
+		}
+
+		if (UAbilityTask_WaitGameplayEvent* WaitAmmoCommitTask =
+			UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(this, BlackoutGameplayTags::Event_Montage_ReloadAmmoCommit))
+		{
+			WaitAmmoCommitTask->EventReceived.AddDynamic(this, &UBlackoutGA_Reload::OnReloadAmmoCommitEventReceived);
+			WaitAmmoCommitTask->ReadyForActivation();
 		}
 
 		if (PlayerCharacter->IsLocallyControlled())
@@ -147,6 +131,7 @@ void UBlackoutGA_Reload::ActivateAbility(const FGameplayAbilitySpecHandle Handle
 
 	if (PlayerCharacter->HasAuthority())
 	{
+		ApplyReloadEffect();
 		OnReloadMontageCompleted();
 	}
 }
@@ -185,6 +170,27 @@ void UBlackoutGA_Reload::OnWeaponReloadStartEventReceived(FGameplayEventData Pay
 		*GetNameSafe(PlayerCharacter),
 		*GetNameSafe(EquippedFirearm),
 		*Payload.EventTag.ToString());
+}
+
+void UBlackoutGA_Reload::OnReloadAmmoCommitEventReceived(FGameplayEventData Payload)
+{
+	if (!CurrentActorInfo || !CurrentActorInfo->AvatarActor.IsValid())
+	{
+		BO_LOG_GAS(Warning, "GA_Reload ammo commit ignored: ActorInfo 또는 AvatarActor가 유효하지 않음");
+		return;
+	}
+
+	if (!CurrentActorInfo->AvatarActor->HasAuthority())
+	{
+		return;
+	}
+
+	BO_LOG_GAS(Log,
+		"GA_Reload ammo commit event received: Character=%s EventTag=%s",
+		*GetNameSafe(CurrentActorInfo->AvatarActor.Get()),
+		*Payload.EventTag.ToString());
+
+	ApplyReloadEffect();
 }
 
 void UBlackoutGA_Reload::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
@@ -232,6 +238,7 @@ void UBlackoutGA_Reload::EndAbility(const FGameplayAbilitySpecHandle Handle, con
 	PendingWeaponSlotTag = FGameplayTag();
 	CachedReloadMontage = nullptr;
 	bWeaponReloadAnimationTriggered = false;
+	bReloadEffectApplied = false;
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
 
@@ -244,22 +251,53 @@ void UBlackoutGA_Reload::OnReloadMontageCompleted()
 
 	BO_LOG_GAS(Log, "GA_Reload montage completed");
 
-	// 장전 완료 시 데미지 이펙트 (ReloadEffectClass, 내부적으로 ExecCalc_Reload 실행) 적용하여 탄약 수치 갱신
-	if (ReloadEffectClass && GetAbilitySystemComponentFromActorInfo())
+	if (!bReloadEffectApplied)
 	{
-		FGameplayEffectSpecHandle SpecHandle = MakeOutgoingGameplayEffectSpec(ReloadEffectClass, GetAbilityLevel());
-		if (SpecHandle.IsValid())
-		{
-			if (PendingWeaponSlotTag.IsValid())
-			{
-				SpecHandle.Data->AddDynamicAssetTag(PendingWeaponSlotTag);
-			}
-
-			GetAbilitySystemComponentFromActorInfo()->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
-			GetAbilitySystemComponentFromActorInfo()->ExecuteGameplayCue(BlackoutGameplayTags::GameplayCue_Weapon_Reload);
-			BO_LOG_GAS(Log, "GA_Reload applied reload effect");
-		}
+		BO_LOG_GAS(Warning, "GA_Reload completed without ammo commit notify: Montage=%s", *GetNameSafe(CachedReloadMontage));
 	}
 
 	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
+}
+
+void UBlackoutGA_Reload::ApplyReloadEffect()
+{
+	if (bReloadEffectApplied)
+	{
+		return;
+	}
+
+	if (!CurrentActorInfo || !CurrentActorInfo->AvatarActor.IsValid() || !CurrentActorInfo->AvatarActor->HasAuthority())
+	{
+		return;
+	}
+
+	UAbilitySystemComponent* AbilitySystemComponent = GetAbilitySystemComponentFromActorInfo();
+	if (!AbilitySystemComponent)
+	{
+		BO_LOG_GAS(Warning, "GA_Reload apply effect failed: ASC가 유효하지 않음");
+		return;
+	}
+
+	if (ReloadEffectClass)
+	{
+		FGameplayEffectSpecHandle SpecHandle = MakeOutgoingGameplayEffectSpec(ReloadEffectClass, GetAbilityLevel());
+		if (!SpecHandle.IsValid())
+		{
+			BO_LOG_GAS(Warning, "GA_Reload apply effect failed: GameplayEffectSpec 생성 실패");
+			return;
+		}
+
+		if (PendingWeaponSlotTag.IsValid())
+		{
+			SpecHandle.Data->AddDynamicAssetTag(PendingWeaponSlotTag);
+		}
+
+		AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+		AbilitySystemComponent->ExecuteGameplayCue(BlackoutGameplayTags::GameplayCue_Weapon_Reload);
+		bReloadEffectApplied = true;
+		BO_LOG_GAS(Log, "GA_Reload applied reload effect");
+		return;
+	}
+
+	BO_LOG_GAS(Warning, "GA_Reload apply effect failed: ReloadEffectClass가 설정되지 않음");
 }

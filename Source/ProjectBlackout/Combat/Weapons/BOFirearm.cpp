@@ -295,6 +295,17 @@ bool ABOFirearm::StopWeaponReloadAnimation()
 		return false;
 	}
 
+	if (WeaponMesh->GetAnimationMode() == EAnimationMode::AnimationSingleNode)
+	{
+		if (UAnimSingleNodeInstance* SingleNodeInstance = WeaponMesh->GetSingleNodeInstance())
+		{
+			// 재장전 취소 시 탄창 분리 포즈가 남지 않도록 시작 프레임으로 되돌립니다.
+			SingleNodeInstance->SetPosition(0.0f, false);
+			SingleNodeInstance->SetPlaying(false);
+			return true;
+		}
+	}
+
 	WeaponMesh->Stop();
 	return true;
 }

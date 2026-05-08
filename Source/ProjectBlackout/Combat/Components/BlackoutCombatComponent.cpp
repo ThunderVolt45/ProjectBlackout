@@ -492,17 +492,12 @@ void UBlackoutCombatComponent::Multicast_ApplyEquippedWeaponHolsterOverride_Impl
 
 void UBlackoutCombatComponent::HandleWeaponSwapMontageEnded(bool bInterrupted)
 {
-	if (!bInterrupted && PendingWeaponSwapSlotTag.IsValid())
-	{
-		CommitPendingWeaponSwap();
-	}
-
 	if (bInterrupted && PendingWeaponSwapSlotTag.IsValid() && GetOwner() && !GetOwner()->HasAuthority())
 	{
 		Server_CancelPendingWeaponSwap();
 	}
 
-	if (bInterrupted)
+	if (PendingWeaponSwapSlotTag.IsValid())
 	{
 		PendingWeaponSwapSlotTag = FGameplayTag();
 	}

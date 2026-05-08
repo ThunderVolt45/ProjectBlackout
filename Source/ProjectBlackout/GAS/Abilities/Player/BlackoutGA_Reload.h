@@ -12,7 +12,7 @@ struct FGameplayEventData;
 
 /**
  * 플레이어 무기 장전 게임플레이 어빌리티 (TDD v5 §4.1)
- * 장전 몽타주 재생 및 완료 시 ExecCalc_Reload를 통해 탄약 갱신을 수행합니다.
+ * 장전 몽타주 재생 및 탄창 결합 Notify 시점에 ExecCalc_Reload를 통해 탄약 갱신을 수행합니다.
  */
 UCLASS()
 class PROJECTBLACKOUT_API UBlackoutGA_Reload : public UBlackoutGameplayAbility
@@ -25,8 +25,6 @@ public:
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
 	virtual void EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled) override;
 
-	static UBlackoutGA_Reload* GetActiveReloadAbilityFromActor(const AActor* OwnerActor);
-
 protected:
 	UAnimMontage* ResolveReloadMontage(const class ABlackoutPlayerCharacter* PlayerCharacter, const class ABOFirearm* EquippedFirearm) const;
 
@@ -36,11 +34,17 @@ protected:
 	UFUNCTION()
 	void OnWeaponReloadStartEventReceived(FGameplayEventData Payload);
 
+	UFUNCTION()
+	void OnReloadAmmoCommitEventReceived(FGameplayEventData Payload);
+
 	UFUNCTION(BlueprintCallable, Category = "Blackout|Combat")
 	void OnReloadMontageCompleted();
+
+	void ApplyReloadEffect();
 
 	FGameplayTag PendingWeaponSlotTag;
 	TObjectPtr<UAnimMontage> CachedReloadMontage = nullptr;
 	bool bWeaponReloadAnimationTriggered = false;
+	bool bReloadEffectApplied = false;
 	FTimerHandle ReloadCompletionTimerHandle;
 };
