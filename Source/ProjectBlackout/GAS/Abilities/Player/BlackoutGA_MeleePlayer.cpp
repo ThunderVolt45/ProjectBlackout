@@ -20,6 +20,7 @@ UBlackoutGA_MeleePlayer::UBlackoutGA_MeleePlayer()
 	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::LocalPredicted;
 
 	ActivationOwnedTags.AddTag(BlackoutGameplayTags::State_Attacking);
+	CancelAbilitiesWithTag.AddTag(BlackoutGameplayTags::Ability_Player_Reload);
 	ActivationBlockedTags.AddTag(BlackoutGameplayTags::State_Aiming);
 	ActivationBlockedTags.AddTag(BlackoutGameplayTags::State_Sprinting);
 	ActivationBlockedTags.AddTag(BlackoutGameplayTags::State_Downed);

@@ -103,6 +103,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Blackout|Animation")
 	bool PlayWeaponSwapMontage(FGameplayTag TargetWeaponSlotTag, float PlayRate = 1.f);
 
+	UFUNCTION(BlueprintPure, Category = "Blackout|Animation")
+	UAnimMontage* GetWeaponSwapMontageForSlot(FGameplayTag TargetWeaponSlotTag) const;
+
 	UFUNCTION(NetMulticast, Reliable, Category = "Blackout|Animation")
 	void Multicast_PlayMeleeMontage(UAnimMontage* Montage, FName StartSection = NAME_None, float PlayRate = 1.f);
 
@@ -315,8 +318,6 @@ protected:
 
 	UFUNCTION()
 	void HandleWeaponSwapMontageEnded(UAnimMontage* Montage, bool bInterrupted);
-
-	UAnimMontage* GetWeaponSwapMontage(FGameplayTag TargetWeaponSlotTag) const;
 	
 #pragma endregion
 	

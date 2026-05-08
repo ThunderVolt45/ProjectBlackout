@@ -9,10 +9,13 @@ namespace BlackoutGameplayTags
 	UE_DEFINE_GAMEPLAY_TAG(State_Aiming,        "State.Aiming");
 	UE_DEFINE_GAMEPLAY_TAG(State_Sprinting,     "State.Sprinting");
 	UE_DEFINE_GAMEPLAY_TAG(State_Attacking,     "State.Attacking");
+	UE_DEFINE_GAMEPLAY_TAG(State_Reloading,     "State.Reloading");
 	UE_DEFINE_GAMEPLAY_TAG(State_UseConsumable, "State.UseConsumable");
 	
 	// ─── Character Abilities ───────────────────────────────────────────────────
 	UE_DEFINE_GAMEPLAY_TAG(Ability_Player_Dodge,			"Ability.Player.Dodge");
+	UE_DEFINE_GAMEPLAY_TAG(Ability_Player_Reload,			"Ability.Player.Reload");
+	UE_DEFINE_GAMEPLAY_TAG(Ability_Player_SwapWeapon,		"Ability.Player.SwapWeapon");
 	UE_DEFINE_GAMEPLAY_TAG(Ability_Player_Sprint,			"Ability.Player.Sprint");
 	UE_DEFINE_GAMEPLAY_TAG(Ability_Player_UseConsumable,	"Ability.Player.UseConsumable");
 
@@ -72,6 +75,8 @@ namespace BlackoutGameplayTags
 	
 	// ─── Ravager Abilities ──────────────────────────────────────────────────────
 	UE_DEFINE_GAMEPLAY_TAG(Ability_Ravager_Bite_Single, "Ability.Ravager.Bite.Single");
+	UE_DEFINE_GAMEPLAY_TAG(Ability_Ravager_Bite_DoubleFromSingle, "Ability.Ravager.Bite.DoubleFromSingle");
+	
 	UE_DEFINE_GAMEPLAY_TAG(Ability_Ravager_Swipe_RFromSingle, "Ability.Ravager.Swipe.RFromSingle");
 	
 	// ─── Wraith Abilities ──────────────────────────────────────────────────────
@@ -97,5 +102,8 @@ namespace BlackoutGameplayTags
 
 	// ─── Montage Events ───────────────────────────────────────────────────
 	UE_DEFINE_GAMEPLAY_TAG(Event_Montage_ConsumableApply, "Event.Montage.ConsumableApply");
+	UE_DEFINE_GAMEPLAY_TAG(Event_Montage_ReloadWeaponStart, "Event.Montage.Reload.WeaponStart");
+	UE_DEFINE_GAMEPLAY_TAG(Event_Montage_ReloadAmmoCommit, "Event.Montage.Reload.AmmoCommit");
+	UE_DEFINE_GAMEPLAY_TAG(Event_Montage_WeaponSwapCommit, "Event.Montage.WeaponSwap.Commit");
 	
 }

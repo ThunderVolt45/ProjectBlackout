@@ -429,7 +429,7 @@ void ABlackoutPlayerCharacter::Multicast_PlayWeaponSwapMontage_Implementation(FG
 
 bool ABlackoutPlayerCharacter::PlayWeaponSwapMontage(FGameplayTag TargetWeaponSlotTag, float PlayRate)
 {
-	UAnimMontage* Montage = GetWeaponSwapMontage(TargetWeaponSlotTag);
+	UAnimMontage* Montage = GetWeaponSwapMontageForSlot(TargetWeaponSlotTag);
 	if (!Montage)
 	{
 		BO_LOG_GAS(Warning, "PlayWeaponSwapMontage failed: 슬롯 %s 에 대응하는 몽타주가 비어 있음", *TargetWeaponSlotTag.ToString());
@@ -472,6 +472,21 @@ bool ABlackoutPlayerCharacter::PlayWeaponSwapMontage(FGameplayTag TargetWeaponSl
 
 	bIsWeaponSwapMontagePlaying = false;
 	return false;
+}
+
+UAnimMontage* ABlackoutPlayerCharacter::GetWeaponSwapMontageForSlot(FGameplayTag TargetWeaponSlotTag) const
+{
+	if (TargetWeaponSlotTag == BlackoutGameplayTags::Weapon_Primary)
+	{
+		return EquipPrimaryMontage;
+	}
+
+	if (TargetWeaponSlotTag == BlackoutGameplayTags::Weapon_Secondary)
+	{
+		return EquipSecondaryMontage;
+	}
+
+	return nullptr;
 }
 
 void ABlackoutPlayerCharacter::Multicast_PlayMeleeMontage_Implementation(UAnimMontage* Montage, FName StartSection, float PlayRate)
@@ -1015,21 +1030,6 @@ bool ABlackoutPlayerCharacter::StopRevivePerformMontage(UAnimMontage* Montage, f
 void ABlackoutPlayerCharacter::Multicast_PlayReviveMontage_Implementation(UAnimMontage* Montage, float PlayRate)
 {
 	PlayReviveMontage(Montage, PlayRate);
-}
-
-UAnimMontage* ABlackoutPlayerCharacter::GetWeaponSwapMontage(FGameplayTag TargetWeaponSlotTag) const
-{
-	if (TargetWeaponSlotTag == BlackoutGameplayTags::Weapon_Primary)
-	{
-		return EquipPrimaryMontage;
-	}
-
-	if (TargetWeaponSlotTag == BlackoutGameplayTags::Weapon_Secondary)
-	{
-		return EquipSecondaryMontage;
-	}
-
-	return nullptr;
 }
 
 void ABlackoutPlayerCharacter::CacheAimDefaults()

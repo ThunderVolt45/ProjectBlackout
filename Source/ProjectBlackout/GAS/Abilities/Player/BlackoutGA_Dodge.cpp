@@ -21,6 +21,7 @@ UBlackoutGA_Dodge::UBlackoutGA_Dodge()
 
 	
 	ActivationOwnedTags.AddTag(BlackoutGameplayTags::State_Locked);
+	CancelAbilitiesWithTag.AddTag(BlackoutGameplayTags::Ability_Player_Reload);
 	ActivationBlockedTags.AddTag(BlackoutGameplayTags::State_Downed);
 	ActivationBlockedTags.AddTag(BlackoutGameplayTags::State_Locked);
 }
@@ -57,7 +58,7 @@ void UBlackoutGA_Dodge::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 		BO_LOG_GAS(Log, "GA_Dodge cancelling active melee before dodge");
 		MeleeAbility->K2_CancelAbility();
 	}
-	
+
 	// TODO : 백스텝 임시 항상 FALSE  , 추후 방향입력 X DODGE 실행시 백스텝 추가 예정 
 	bool bIsBackstep = false;
 	const FVector DodgeDirection = CalculateDodgeDirection(ActorInfo, bIsBackstep);
