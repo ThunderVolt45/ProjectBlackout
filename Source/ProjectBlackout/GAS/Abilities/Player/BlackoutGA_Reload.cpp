@@ -17,6 +17,7 @@ UBlackoutGA_Reload::UBlackoutGA_Reload()
 	InputID = EBlackoutAbilityInputID::Reload;
 	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::LocalPredicted;
+	ActivationOwnedTags.AddTag(BlackoutGameplayTags::State_Reloading);
 	ActivationBlockedTags.AddTag(BlackoutGameplayTags::State_Downed);
 	ActivationBlockedTags.AddTag(BlackoutGameplayTags::State_Locked);
 }
