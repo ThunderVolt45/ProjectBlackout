@@ -83,17 +83,20 @@ namespace BlackoutGameplayTags
 	// ─── Wraith Abilities ──────────────────────────────────────────────────────
 	UE_DEFINE_GAMEPLAY_TAG(Ability_Wraith_FireTwinArrows, "Ability.Wraith.FireTwinArrows");
 	UE_DEFINE_GAMEPLAY_TAG(Cooldown_Wraith_FireTwinArrows, "Cooldown.Wraith.FireTwinArrows");
+	UE_DEFINE_GAMEPLAY_TAG(Event_Wraith_FireTwinArrows_Shot, "Event.Wraith.FireTwinArrows.Shot");
 	UE_DEFINE_GAMEPLAY_TAG(Ability_Wraith_Teleport,"Ability.Wraith.Teleport");
+	UE_DEFINE_GAMEPLAY_TAG(Cooldown_Wraith_Teleport, "Cooldown.Wraith.Teleport");
 	UE_DEFINE_GAMEPLAY_TAG(Ability_Wraith_BowShove,"Ability.Wraith.BowShove");
+	UE_DEFINE_GAMEPLAY_TAG(Cooldown_Wraith_BowShove, "Cooldown.Wraith.BowShove");
 	
 	// ─── Wraith Gameplay Cues ──────────────────────────────────────────────────
 	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Wraith_Fire, "GameplayCue.Wraith.Fire");
 	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Wraith_Teleport_Start, "GameplayCue.Wraith.Teleport.Start");
 	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Wraith_Teleport_End, "GameplayCue.Wraith.Teleport.End");
+	UE_DEFINE_GAMEPLAY_TAG(Event_Wraith_Teleport_Vanish, "Event.Wraith.Teleport.Vanish");
+	UE_DEFINE_GAMEPLAY_TAG(Event_Wraith_Teleport_Appear , "Event.Wraith.Teleport.Appear");
 	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Wraith_BowShove, "GameplayCue.Wraith.BowShove");
 	
-	// ─── Wraith State ──────────────────────────────────────────────────────────
-	UE_DEFINE_GAMEPLAY_TAG(State_Wraith_Invulnerable, "State.Wraith.Invulnerable");
 	
 	UE_DEFINE_GAMEPLAY_TAG(Event_Enemy_Attack_SweepStart, "Event.Enemy.Attack.SweepStart");
 	UE_DEFINE_GAMEPLAY_TAG(Event_Enemy_Attack_SweepEnd, "Event.Enemy.Attack.SweepEnd");

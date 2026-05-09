@@ -87,17 +87,20 @@ namespace BlackoutGameplayTags
 	// ─── Wraith Abilities ─────────────────────────────────────────────────────────
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Wraith_FireTwinArrows);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Cooldown_Wraith_FireTwinArrows);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Event_Wraith_FireTwinArrows_Shot);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Wraith_Teleport);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Cooldown_Wraith_Teleport);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Wraith_BowShove);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Cooldown_Wraith_BowShove);
 	
 	// ─── Wraith Gameplay Cues ───────────────────────────────────────────────────────── 
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Wraith_Fire);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Wraith_Teleport_Start);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Wraith_Teleport_End);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Event_Wraith_Teleport_Vanish);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Event_Wraith_Teleport_Appear);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Wraith_BowShove);
 	
-	// ─── Wraith State ─────────────────────────────────────────────────────────
-	UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Wraith_Invulnerable);
 
 	// ─── Attack Events ────────────────────────────────────────────────────
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Event_Enemy_Attack_SweepStart);
