@@ -72,8 +72,6 @@ void UBlackoutGA_UseRelic::ActivateAbility(const FGameplayAbilitySpecHandle Hand
 	}
 
 	bRelicApplied = false;
-	ApplySlowMovementSpeed(ActorInfo);
-	BeginWeaponHolsterOverride(ActorInfo);
 
 	if (UBlackoutCombatComponent* CombatComponent = PlayerCharacter->GetCombatComponent())
 	{
@@ -86,6 +84,9 @@ void UBlackoutGA_UseRelic::ActivateAbility(const FGameplayAbilitySpecHandle Hand
 	{
 		MovementComponent->StopMovementImmediately();
 	}
+
+	ApplySlowMovementSpeed(ActorInfo);
+	BeginWeaponHolsterOverride(ActorInfo);
 
 	if (RelicMontage && PlayerCharacter->HasAuthority())
 	{
