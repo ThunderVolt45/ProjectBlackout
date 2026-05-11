@@ -1,5 +1,7 @@
 #include "Combat/Components/BlackoutImpactIndicatorComponent.h"
 
+#include "AbilitySystemComponent.h"
+#include "AbilitySystemGlobals.h"
 #include "BlackoutLog.h"
 #include "Combat/Components/BlackoutCombatComponent.h"
 #include "Combat/Weapons/BOFirearm.h"
@@ -10,6 +12,8 @@
 #include "Engine/World.h"
 #include "GameFramework/Controller.h"
 #include "GameFramework/Pawn.h"
+#include "GameFramework/PlayerState.h"
+#include "GameplayTags/BlackoutGameplayTags.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/GameplayStaticsTypes.h"
 
@@ -101,7 +105,7 @@ bool UBlackoutImpactIndicatorComponent::RefreshCachedImpactIndicatorData(const F
 	LastUpdateKey = UpdateKey;
 	bHasCachedIndicatorData = true;
 
-	if (!UpdateKey.bIsAiming)
+	if (!UpdateKey.bIsAiming || UpdateKey.bIsReloading)
 	{
 		CachedIndicatorData = RefreshedData;
 		return true;
@@ -293,6 +297,7 @@ bool UBlackoutImpactIndicatorComponent::BuildImpactIndicatorUpdateKey(FBlackoutI
 	}
 
 	OutUpdateKey.bIsAiming = ResolvedCombatComponent->IsAiming();
+	OutUpdateKey.bIsReloading = IsOwnerReloading();
 	OutUpdateKey.EquippedFirearm = ResolvedCombatComponent->GetEquippedFirearm();
 	if (const ABOFirearm* Firearm = OutUpdateKey.EquippedFirearm.Get())
 	{
@@ -311,6 +316,7 @@ bool UBlackoutImpactIndicatorComponent::HasImpactIndicatorUpdateInputChanged(con
 	}
 
 	return LastUpdateKey.bIsAiming != UpdateKey.bIsAiming
+		|| LastUpdateKey.bIsReloading != UpdateKey.bIsReloading
 		|| LastUpdateKey.EquippedFirearm.Get() != UpdateKey.EquippedFirearm.Get()
 		|| !LastUpdateKey.CameraRotation.Equals(UpdateKey.CameraRotation, ImpactIndicatorCameraRotationToleranceDegrees)
 		|| !LastUpdateKey.MuzzleLocation.Equals(UpdateKey.MuzzleLocation, ImpactIndicatorMuzzleLocationTolerance);
@@ -543,6 +549,26 @@ bool UBlackoutImpactIndicatorComponent::IsProjectileImpactOccludedFromCamera(con
 
 	constexpr float ImpactSurfaceTolerance = 10.0f;
 	return CameraHitResult.Distance < ViewToImpactDistance - ImpactSurfaceTolerance;
+}
+
+bool UBlackoutImpactIndicatorComponent::IsOwnerReloading() const
+{
+	const AActor* OwnerActor = GetOwner();
+	UAbilitySystemComponent* AbilitySystemComponent = OwnerActor
+		? UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(OwnerActor)
+		: nullptr;
+
+	if (!AbilitySystemComponent)
+	{
+		const APawn* OwnerPawn = Cast<APawn>(OwnerActor);
+		const APlayerState* OwnerPlayerState = OwnerPawn ? OwnerPawn->GetPlayerState() : nullptr;
+		AbilitySystemComponent = OwnerPlayerState
+			? UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(OwnerPlayerState)
+			: nullptr;
+	}
+
+	return AbilitySystemComponent
+		&& AbilitySystemComponent->HasMatchingGameplayTag(BlackoutGameplayTags::State_Reloading);
 }
 
 AActor* UBlackoutImpactIndicatorComponent::ResolveTargetActor(const FHitResult& HitResult) const

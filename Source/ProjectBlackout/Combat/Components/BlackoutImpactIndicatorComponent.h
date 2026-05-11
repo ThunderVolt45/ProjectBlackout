@@ -14,6 +14,7 @@ struct FPredictProjectilePathResult;
 struct FBlackoutImpactIndicatorUpdateKey
 {
 	bool bIsAiming = false;
+	bool bIsReloading = false;
 	FRotator CameraRotation = FRotator::ZeroRotator;
 	FVector MuzzleLocation = FVector::ZeroVector;
 	TWeakObjectPtr<ABOFirearm> EquippedFirearm;
@@ -67,6 +68,7 @@ private:
 	void BuildTrajectoryPoints(const FPredictProjectilePathResult& PathResult, TArray<FBlackoutTrajectoryPointData>& OutTrajectoryPoints, float& OutTravelDistance) const;
 	bool PerformWeaponTrace(const FVector& TraceStart, const FVector& TraceEnd, const AActor* IgnoredActor, FHitResult& OutHitResult) const;
 	bool IsProjectileImpactOccludedFromCamera(const ABOFirearm* Firearm, const FVector& ImpactPoint) const;
+	bool IsOwnerReloading() const;
 	AActor* ResolveTargetActor(const FHitResult& HitResult) const;
 	FVector ResolveFireDirection(const ABOFirearm* Firearm) const;
 
