@@ -340,13 +340,7 @@ bool ABlackoutPlayerCharacter::PlayFireMontage(UAnimMontage* Montage, float Play
 	}
 
 	const float PlayResult = PlayAnimMontage(Montage, PlayRate);
-	BO_LOG_GAS(PlayResult > 0.f ? Log : Warning,
-		"PlayFireMontage %s: Result=%.2f Local=%s Authority=%s Montage=%s",
-		PlayResult > 0.f ? TEXT("succeeded") : TEXT("failed"),
-		PlayResult,
-		IsLocallyControlled() ? TEXT("true") : TEXT("false"),
-		HasAuthority() ? TEXT("true") : TEXT("false"),
-		*GetNameSafe(Montage));
+
 
 	return PlayResult > 0.f;
 }
@@ -728,6 +722,11 @@ bool ABlackoutPlayerCharacter::StopMeleeMontage(UAnimMontage* Montage, float Ble
 void ABlackoutPlayerCharacter::Multicast_PlayConsumableMontage_Implementation(UAnimMontage* Montage, float PlayRate)
 {
 	if (!Montage)
+	{
+		return;
+	}
+
+	if (IsLocallyControlled() && !HasAuthority())
 	{
 		return;
 	}
@@ -1281,7 +1280,9 @@ void ABlackoutPlayerCharacter::DoMove(float Right, float Forward)
 		return;
 	}
 
-	if (AbilitySystemComponent && AbilitySystemComponent->HasMatchingGameplayTag(BlackoutGameplayTags::State_Locked))
+	if (AbilitySystemComponent
+		&& AbilitySystemComponent->HasMatchingGameplayTag(BlackoutGameplayTags::State_Locked)
+		&& !AbilitySystemComponent->HasMatchingGameplayTag(BlackoutGameplayTags::State_UseRelic))
 	{
 		return;
 	}
