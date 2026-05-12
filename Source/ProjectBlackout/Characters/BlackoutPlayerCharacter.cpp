@@ -748,6 +748,64 @@ void ABlackoutPlayerCharacter::Multicast_StopConsumableMontage_Implementation(UA
 	}
 }
 
+void ABlackoutPlayerCharacter::Client_BeginAbilityMovementOverride_Implementation(float SpeedMultiplier, bool bStopMovementImmediately, bool bAddLockedTag)
+{
+	if (!IsLocallyControlled() || HasAuthority())
+	{
+		return;
+	}
+
+	UCharacterMovementComponent* MoveComp = GetCharacterMovement();
+	if (!MoveComp)
+	{
+		BO_LOG_GAS(Warning, "Client_BeginAbilityMovementOverride failed: MovementComponent가 비어 있음");
+		return;
+	}
+
+	if (CachedAbilityOverrideMaxWalkSpeed <= 0.0f)
+	{
+		CachedAbilityOverrideMaxWalkSpeed = MoveComp->MaxWalkSpeed;
+	}
+
+	if (bStopMovementImmediately)
+	{
+		MoveComp->StopMovementImmediately();
+	}
+
+	MoveComp->MaxWalkSpeed = CachedAbilityOverrideMaxWalkSpeed * FMath::Clamp(SpeedMultiplier, 0.0f, 1.0f);
+
+	if (bAddLockedTag && AbilitySystemComponent && !bAppliedLocalAbilityLockedTag)
+	{
+		// 서버 태그 복제 전까지 소유 클라이언트 입력을 같은 프레임 규칙으로 막습니다.
+		AbilitySystemComponent->AddLooseGameplayTag(BlackoutGameplayTags::State_Locked);
+		bAppliedLocalAbilityLockedTag = true;
+	}
+}
+
+void ABlackoutPlayerCharacter::Client_EndAbilityMovementOverride_Implementation()
+{
+	if (!IsLocallyControlled() || HasAuthority())
+	{
+		return;
+	}
+
+	if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
+	{
+		if (CachedAbilityOverrideMaxWalkSpeed > 0.0f)
+		{
+			MoveComp->MaxWalkSpeed = CachedAbilityOverrideMaxWalkSpeed;
+		}
+	}
+
+	if (AbilitySystemComponent && bAppliedLocalAbilityLockedTag)
+	{
+		AbilitySystemComponent->RemoveLooseGameplayTag(BlackoutGameplayTags::State_Locked);
+	}
+
+	CachedAbilityOverrideMaxWalkSpeed = 0.0f;
+	bAppliedLocalAbilityLockedTag = false;
+}
+
 void ABlackoutPlayerCharacter::CommitPendingWeaponSwap()
 {
 	if (CombatComponent)

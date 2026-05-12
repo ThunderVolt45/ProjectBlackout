@@ -154,6 +154,12 @@ public:
 	UFUNCTION(NetMulticast, Reliable, Category = "Blackout|Animation")
 	void Multicast_StopConsumableMontage(UAnimMontage* Montage, float BlendOutTime = 0.25f);
 
+	UFUNCTION(Client, Reliable, Category = "Blackout|Movement")
+	void Client_BeginAbilityMovementOverride(float SpeedMultiplier, bool bStopMovementImmediately, bool bAddLockedTag);
+
+	UFUNCTION(Client, Reliable, Category = "Blackout|Movement")
+	void Client_EndAbilityMovementOverride();
+
 	UFUNCTION(Server, Unreliable, Category = "Blackout|Animation")
 	void Server_SetAimOffset(FVector2D NewAimOffset);
 
@@ -308,6 +314,12 @@ protected:
 
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "Blackout|Animation")
 	bool bIsDodgeMontagePlaying = false;
+
+	UPROPERTY(Transient)
+	float CachedAbilityOverrideMaxWalkSpeed = 0.0f;
+
+	UPROPERTY(Transient)
+	bool bAppliedLocalAbilityLockedTag = false;
 
 	UFUNCTION()
 	void HandleDodgeMontageEnded(UAnimMontage* Montage, bool bInterrupted);
