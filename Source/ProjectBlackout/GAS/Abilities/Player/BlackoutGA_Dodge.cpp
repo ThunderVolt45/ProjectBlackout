@@ -173,11 +173,8 @@ void UBlackoutGA_Dodge::OnChainInputPressed(float TimeWaited)
 {
 	ChainInputTask = nullptr;
 
-	// v2: 체인 상태머신은 서버 권위. 클라이언트는 입력 알림만 받고 별도 처리 없음.
-	if (HasAuthority(&CurrentActivationInfo))
-	{
-		ServerProcessChainInput();
-	}
+	// v2.1: 양측 모두 체인 입력을 처리합니다. 클라이언트는 로컬 예측 점프를, 서버는 권위 점프를 수행합니다.
+	ProcessChainInput();
 
 	if (IsActive())
 	{
@@ -185,7 +182,7 @@ void UBlackoutGA_Dodge::OnChainInputPressed(float TimeWaited)
 	}
 }
 
-void UBlackoutGA_Dodge::ServerProcessChainInput()
+void UBlackoutGA_Dodge::ProcessChainInput()
 {
 	if (!DodgeData)
 	{
@@ -200,21 +197,21 @@ void UBlackoutGA_Dodge::ServerProcessChainInput()
 
 	if (bChainWindowOpen)
 	{
-		ServerStartChainedDodge();
+		StartChainedDodge();
 		return;
 	}
 
 	if (bChainGraceWindowOpen || WasInputWithinChainGrace(InputPayload))
 	{
-		ServerStartChainedDodge();
+		StartChainedDodge();
 		return;
 	}
 
 	// 윈도우 도래 전 입력 → buffer 적재.
-	ServerBufferChainInput(InputPayload);
+	BufferChainInput(InputPayload);
 }
 
-void UBlackoutGA_Dodge::ServerScheduleChainTimers()
+void UBlackoutGA_Dodge::ScheduleChainTimers()
 {
 	if (!DodgeData)
 	{
@@ -244,14 +241,14 @@ void UBlackoutGA_Dodge::ServerScheduleChainTimers()
 
 	if (OpenDelay <= KINDA_SMALL_NUMBER)
 	{
-		OnServerChainWindowOpenTimer();
+		OnChainWindowOpenTimer();
 	}
 	else
 	{
 		TimerManager.SetTimer(
 			ChainWindowOpenTimerHandle,
 			this,
-			&UBlackoutGA_Dodge::OnServerChainWindowOpenTimer,
+			&UBlackoutGA_Dodge::OnChainWindowOpenTimer,
 			OpenDelay,
 			false);
 	}
@@ -261,37 +258,35 @@ void UBlackoutGA_Dodge::ServerScheduleChainTimers()
 		TimerManager.SetTimer(
 			ChainWindowCloseTimerHandle,
 			this,
-			&UBlackoutGA_Dodge::OnServerChainWindowCloseTimer,
+			&UBlackoutGA_Dodge::OnChainWindowCloseTimer,
 			CloseDelay,
 			false);
 	}
 
 	BO_LOG_GAS(Log,
-		"GA_Dodge scheduled chain timers (server): Open=%.3f Close=%.3f",
+		"GA_Dodge scheduled chain timers: Open=%.3f Close=%.3f Authority=%s",
 		OpenDelay,
-		CloseDelay);
+		CloseDelay,
+		HasAuthority(&CurrentActivationInfo) ? TEXT("true") : TEXT("false"));
 }
 
-void UBlackoutGA_Dodge::OnServerChainWindowOpenTimer()
+void UBlackoutGA_Dodge::OnChainWindowOpenTimer()
 {
-	if (!HasAuthority(&CurrentActivationInfo))
-	{
-		return;
-	}
-
 	bChainWindowOpen = true;
 	bChainGraceWindowOpen = false;
 	ChainWindowOpenedServerTime = GetCurrentServerTimeSeconds();
 	ChainWindowClosedServerTime = 0.f;
 	ActiveChainGraceDuration = 0.f;
 
-	BO_LOG_GAS(Log, "GA_Dodge chain window opened (server)");
+	BO_LOG_GAS(Log,
+		"GA_Dodge chain window opened: Authority=%s",
+		HasAuthority(&CurrentActivationInfo) ? TEXT("true") : TEXT("false"));
 
 	if (bChainInputQueued)
 	{
 		if (IsBufferedChainInputStillValid())
 		{
-			ServerStartChainedDodge();
+			StartChainedDodge();
 		}
 		else
 		{
@@ -302,13 +297,8 @@ void UBlackoutGA_Dodge::OnServerChainWindowOpenTimer()
 	}
 }
 
-void UBlackoutGA_Dodge::OnServerChainWindowCloseTimer()
+void UBlackoutGA_Dodge::OnChainWindowCloseTimer()
 {
-	if (!HasAuthority(&CurrentActivationInfo))
-	{
-		return;
-	}
-
 	if (!bChainWindowOpen)
 	{
 		return;
@@ -319,7 +309,7 @@ void UBlackoutGA_Dodge::OnServerChainWindowCloseTimer()
 
 	if (bChainInputQueued)
 	{
-		ServerStartChainedDodge();
+		StartChainedDodge();
 		return;
 	}
 
@@ -339,63 +329,52 @@ void UBlackoutGA_Dodge::OnServerChainWindowCloseTimer()
 		TimerManager.SetTimer(
 			ChainGraceCloseTimerHandle,
 			this,
-			&UBlackoutGA_Dodge::OnServerChainGraceCloseTimer,
+			&UBlackoutGA_Dodge::OnChainGraceCloseTimer,
 			ActiveChainGraceDuration,
 			false);
 	}
 
-	BO_LOG_GAS(Log,
-		"GA_Dodge chain grace started (server): Duration=%.3f",
-		ActiveChainGraceDuration);
+	BO_LOG_GAS(Log, "GA_Dodge chain grace started: Duration=%.3f", ActiveChainGraceDuration);
 }
 
-void UBlackoutGA_Dodge::OnServerChainGraceCloseTimer()
+void UBlackoutGA_Dodge::OnChainGraceCloseTimer()
 {
-	if (!HasAuthority(&CurrentActivationInfo))
-	{
-		return;
-	}
-
 	bChainGraceWindowOpen = false;
 	bChainInputQueued = false;
 	bHasQueuedChainInputPayload = false;
-	BO_LOG_GAS(Log, "GA_Dodge chain grace closed (server)");
+	BO_LOG_GAS(Log, "GA_Dodge chain grace closed");
 }
 
-void UBlackoutGA_Dodge::OnServerChainInputBufferExpired()
+void UBlackoutGA_Dodge::OnChainInputBufferExpired()
 {
-	if (!HasAuthority(&CurrentActivationInfo))
-	{
-		return;
-	}
-
 	if (!bChainWindowOpen && !bChainGraceWindowOpen)
 	{
 		bChainInputQueued = false;
 		bHasQueuedChainInputPayload = false;
-		BO_LOG_GAS(Log, "GA_Dodge chain input buffer expired (server)");
+		BO_LOG_GAS(Log, "GA_Dodge chain input buffer expired");
 	}
 }
 
-bool UBlackoutGA_Dodge::ServerStartChainedDodge()
+bool UBlackoutGA_Dodge::StartChainedDodge()
 {
-	if (!HasAuthority(&CurrentActivationInfo))
-	{
-		return false;
-	}
-
 	ABlackoutPlayerCharacter* PlayerCharacter = CurrentActorInfo ? Cast<ABlackoutPlayerCharacter>(CurrentActorInfo->AvatarActor.Get()) : nullptr;
 	if (!PlayerCharacter)
 	{
 		return false;
 	}
 
-	if (!ConsumeStamina())
+	const bool bIsAuthority = HasAuthority(&CurrentActivationInfo);
+
+	// 스태미나 소모는 서버 권위. 클라이언트는 예측하지 않고 서버 확정 후 attribute 복제로 반영됩니다.
+	if (bIsAuthority)
 	{
-		BO_LOG_GAS(Log, "GA_Dodge chain skipped: 스태미나 부족");
-		bChainInputQueued = false;
-		bHasQueuedChainInputPayload = false;
-		return false;
+		if (!ConsumeStamina())
+		{
+			BO_LOG_GAS(Log, "GA_Dodge chain skipped: 스태미나 부족");
+			bChainInputQueued = false;
+			bHasQueuedChainInputPayload = false;
+			return false;
+		}
 	}
 
 	if (!StartDodgeInternal(PlayerCharacter, /*bIsChainRestart=*/true))
@@ -404,11 +383,13 @@ bool UBlackoutGA_Dodge::ServerStartChainedDodge()
 		return false;
 	}
 
-	BO_LOG_GAS(Log, "GA_Dodge chain started (server)");
+	BO_LOG_GAS(Log,
+		"GA_Dodge chain started: Authority=%s",
+		bIsAuthority ? TEXT("true") : TEXT("false"));
 	return true;
 }
 
-void UBlackoutGA_Dodge::ServerBufferChainInput(const FBlackoutAbilityInputSyncPayload& InputPayload)
+void UBlackoutGA_Dodge::BufferChainInput(const FBlackoutAbilityInputSyncPayload& InputPayload)
 {
 	if (!DodgeData || DodgeData->ServerReceiveBufferDuration <= 0.f)
 	{
@@ -426,12 +407,12 @@ void UBlackoutGA_Dodge::ServerBufferChainInput(const FBlackoutAbilityInputSyncPa
 		TimerManager.SetTimer(
 			ChainInputBufferTimerHandle,
 			this,
-			&UBlackoutGA_Dodge::OnServerChainInputBufferExpired,
+			&UBlackoutGA_Dodge::OnChainInputBufferExpired,
 			DodgeData->ServerReceiveBufferDuration,
 			false);
 	}
 
-	BO_LOG_GAS(Log, "GA_Dodge chain input buffered (server)");
+	BO_LOG_GAS(Log, "GA_Dodge chain input buffered");
 }
 
 UBlackoutGA_Dodge* UBlackoutGA_Dodge::GetActiveDodgeAbilityFromActor(const AActor* OwnerActor)
@@ -529,23 +510,32 @@ bool UBlackoutGA_Dodge::StartDodgeInternal(ABlackoutPlayerCharacter* PlayerChara
 	if (bIsChainRestart)
 	{
 		// v2: 체인 회피는 **동일한 PlayMontageAndWait 태스크 / montage instance** 안에서
-		// 첫 섹션으로 position 만 0 으로 리셋합니다. 새 PlayInstance 를 만들면 클라이언트의
-		// 옛 태스크가 OnInterrupted 를 발화시켜 GA 가 연쇄 종료되므로 사용하지 않습니다.
-		// ASC::CurrentMontageJumpToSection 이 RepAnimMontageInfo 의 Position 만 갱신하여
-		// 시뮬레이트 프록시/오너 클라이언트로 자동 복제됩니다.
-		if (UAbilitySystemComponent* AbilitySystemComponent = GetAbilitySystemComponentFromActorInfo())
+		// 첫 섹션으로 position 만 0 으로 리셋합니다.
+		const FName FirstSectionName = DodgeData->DodgeMontage->GetSectionName(0);
+		if (FirstSectionName != NAME_None)
 		{
-			const FName FirstSectionName = DodgeData->DodgeMontage->GetSectionName(0);
-			if (FirstSectionName != NAME_None)
+			if (HasAuthority(&CurrentActivationInfo))
 			{
-				AbilitySystemComponent->CurrentMontageJumpToSection(FirstSectionName);
+				// 서버 권위: ASC::CurrentMontageJumpToSection 이 RepAnimMontageInfo Position 을 갱신해 자동 복제.
+				if (UAbilitySystemComponent* AbilitySystemComponent = GetAbilitySystemComponentFromActorInfo())
+				{
+					AbilitySystemComponent->CurrentMontageJumpToSection(FirstSectionName);
+				}
 			}
 			else
 			{
-				BO_LOG_GAS(Warning,
-					"GA_Dodge chain restart: 몽타주 %s 에 named section 이 없어 position 리셋이 무시됨",
-					*GetNameSafe(DodgeData->DodgeMontage));
+				// 클라이언트 로컬 예측: RPC 없이 AnimInstance 에 직접 jump.
+				if (UAnimInstance* AnimInstance = PlayerCharacter->GetMesh() ? PlayerCharacter->GetMesh()->GetAnimInstance() : nullptr)
+				{
+					AnimInstance->Montage_JumpToSection(FirstSectionName, DodgeData->DodgeMontage);
+				}
 			}
+		}
+		else
+		{
+			BO_LOG_GAS(Warning,
+				"GA_Dodge chain restart: 몽타주 %s 에 named section 이 없어 position 리셋이 무시됨",
+				*GetNameSafe(DodgeData->DodgeMontage));
 		}
 	}
 	else
@@ -562,10 +552,8 @@ bool UBlackoutGA_Dodge::StartDodgeInternal(ABlackoutPlayerCharacter* PlayerChara
 
 	CurrentDodgeStartedServerTime = GetCurrentServerTimeSeconds();
 
-	if (HasAuthority(&CurrentActivationInfo))
-	{
-		ServerScheduleChainTimers();
-	}
+	// v2.1: 체인 윈도우/그레이스 타이머는 양측 모두 스케줄. 클라이언트는 로컬 예측에 사용합니다.
+	ScheduleChainTimers();
 
 	return true;
 }

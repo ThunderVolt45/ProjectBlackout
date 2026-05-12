@@ -72,22 +72,27 @@ private:
 	UFUNCTION()
 	void OnChainInputPressed(float TimeWaited);
 
-	/** 서버 권위 입력 평가. 윈도우/그레이스/buffer 매칭. */
-	void ServerProcessChainInput();
+	/**
+	 * 입력 평가. 윈도우/그레이스/buffer 매칭.
+	 * v2.1: 양쪽(서버+클라)에서 동일하게 실행. 권위 의존 동작만 내부에서 게이트됩니다.
+	 */
+	void ProcessChainInput();
 
-	/** 서버: 회피 시작 시각 기준으로 체인 윈도우/그레이스 타이머를 예약합니다. */
-	void ServerScheduleChainTimers();
+	/** 회피 시작 시각 기준으로 체인 윈도우/그레이스 타이머를 예약합니다. */
+	void ScheduleChainTimers();
 
-	void OnServerChainWindowOpenTimer();
-	void OnServerChainWindowCloseTimer();
-	void OnServerChainGraceCloseTimer();
-	void OnServerChainInputBufferExpired();
+	void OnChainWindowOpenTimer();
+	void OnChainWindowCloseTimer();
+	void OnChainGraceCloseTimer();
+	void OnChainInputBufferExpired();
 
-	/** 서버: 체인 회피 시작 — 상태 리셋, 몽타주 재시작, 재가속, 스태미나 재소모. */
-	bool ServerStartChainedDodge();
+	/**
+	 * 체인 회피 시작 — 양쪽에서 실행. 스태미나 소모는 서버에서만, 시각 점프는 양쪽에서 수행됩니다.
+	 */
+	bool StartChainedDodge();
 
-	/** 서버: 체인 입력을 receive buffer 에 임시 저장합니다. */
-	void ServerBufferChainInput(const FBlackoutAbilityInputSyncPayload& InputPayload);
+	/** 체인 입력을 receive buffer 에 임시 저장합니다. */
+	void BufferChainInput(const FBlackoutAbilityInputSyncPayload& InputPayload);
 
 	/** 서버: 입력 페이로드 유효성 검증. */
 	bool IsChainInputPayloadUsable(const FBlackoutAbilityInputSyncPayload& InputPayload) const;

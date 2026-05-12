@@ -82,29 +82,35 @@ private:
 	UFUNCTION()
 	void OnComboInputPressed(float TimeWaited);
 
-	/** 서버 권위로 입력을 평가하여 콤보 진행/버퍼/grace 매칭을 수행합니다. */
-	void ServerProcessComboInput();
+	/**
+	 * 입력을 평가하여 콤보 진행/버퍼/grace 매칭을 수행합니다.
+	 * v2.1: 양쪽(서버+클라)에서 동일하게 실행. 권위 의존 동작(RepAnimMontageInfo 갱신)만 내부에서 게이트됩니다.
+	 */
+	void ProcessComboInput();
 
-	/** 서버: 현재 섹션 진입 시각 기준으로 콤보 윈도우/그레이스 타이머를 예약합니다. */
-	void ServerScheduleSectionTimers(int32 SectionIndex);
+	/** 현재 섹션 진입 시각 기준으로 콤보 윈도우/그레이스 타이머를 예약합니다. */
+	void ScheduleSectionTimers(int32 SectionIndex);
 
-	/** 서버: 윈도우 열림 타이머 콜백. */
-	void OnServerComboWindowOpenTimer();
+	/** 윈도우 열림 타이머 콜백. */
+	void OnComboWindowOpenTimer();
 
-	/** 서버: 윈도우 닫힘 타이머 콜백. 매칭 입력이 있으면 즉시 점프, 없으면 grace 시작. */
-	void OnServerComboWindowCloseTimer();
+	/** 윈도우 닫힘 타이머 콜백. */
+	void OnComboWindowCloseTimer();
 
-	/** 서버: grace 만료 타이머 콜백. 버퍼된 입력을 정리하고 콤보 단절. */
-	void OnServerComboGraceCloseTimer();
+	/** grace 만료 타이머 콜백. */
+	void OnComboGraceCloseTimer();
 
-	/** 서버: 다음 섹션으로 점프. RepAnimMontageInfo 가 클라이언트에 자동 복제됩니다. */
-	bool ServerAdvanceToNextComboSection();
+	/**
+	 * 다음 섹션으로 점프. 서버는 ASC::CurrentMontageJumpToSection (RepAnimMontageInfo 자동 복제),
+	 * 클라이언트는 AnimInstance::Montage_JumpToSection 로 RPC 없이 로컬 예측만 수행합니다.
+	 */
+	bool AdvanceToNextComboSection();
 
-	/** 서버: 입력을 receive buffer 에 임시 저장합니다. */
-	void ServerBufferComboInput(const FBlackoutAbilityInputSyncPayload& InputPayload);
+	/** 입력을 receive buffer 에 임시 저장합니다. */
+	void BufferComboInput(const FBlackoutAbilityInputSyncPayload& InputPayload);
 
-	/** 서버: receive buffer 만료 콜백. 윈도우 안에 흡수되지 못한 입력을 비웁니다. */
-	void OnServerComboInputBufferExpired();
+	/** receive buffer 만료 콜백. */
+	void OnComboInputBufferExpired();
 
 	/** 서버: 입력 페이로드 유효성 검증. (sequence/timestamp clamp) */
 	bool IsComboInputPayloadUsable(const FBlackoutAbilityInputSyncPayload& InputPayload) const;
