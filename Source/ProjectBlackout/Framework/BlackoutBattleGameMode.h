@@ -24,6 +24,10 @@ public:
 	// 화톳불 상호작용 시 외부에서 호출. CurrentCheckpointActor 갱신.
 	UFUNCTION(BlueprintCallable, Category = "Blackout|Battle")
 	virtual void HandleCheckpoint(AActor* BonfireActor);
+	
+	// ClientTravel URL SessionId DedicatedSessionSubsystem에 위임
+	// 데디만 사용
+	virtual void InitGame(const FString& MapName, const FString& Options, FString& ErrorMessage) override;
 
 protected:
 	// 플레이어 접속 시 전투 진입 자원 초기화 정책 적용 (LobbyToBattle).

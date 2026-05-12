@@ -6,6 +6,10 @@
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/GameStateBase.h"
 
+#include "BlackoutDedicatedSessionSubsystem.h"
+#include "Kismet/GameplayStatics.h"
+#include  "Engine/GameInstance.h"
+
 // 플레이어 접속 직후 전투 진입 자원 정책 적용. 정원 충족 시 InCombatReady 로 전환 (Ready 대기 단계).
 void ABlackoutBattleGameMode::OnPlayerJoined(APlayerController *NewPlayer)
 {
@@ -64,6 +68,33 @@ void ABlackoutBattleGameMode::HandleCheckpoint(AActor *BonfireActor)
 	BO_LOG_NET(Log, "체크포인트 갱신: %s", *BonfireActor->GetName());
 }
 
+void ABlackoutBattleGameMode::InitGame(const FString& MapName,
+	const FString& Options, FString& ErrorMessage)
+{
+	Super::InitGame(MapName, Options, ErrorMessage);
+	
+	// ClientTravel URL 옵션 "?SessionId=session" 추출
+	const FString SessionId = UGameplayStatics::ParseOption(Options ,TEXT("SessionId"));
+	if (SessionId.IsEmpty())
+	{
+		BO_LOG_NET(Warning , "BattleGameMode InitGame - SessionId 옵션 X (Options=%s)",*Options);
+		return;
+	}
+	
+	// Subsystem 보관
+	UGameInstance* GameInstance = GetGameInstance();
+	UBlackoutDedicatedSessionSubsystem* DedicatedSessionSubsystem = GameInstance? GameInstance->GetSubsystem<UBlackoutDedicatedSessionSubsystem>() : nullptr;
+	
+	if (!DedicatedSessionSubsystem)
+	{
+		BO_LOG_NET(Error,"DedicatedSessionSubsystem 못 찾음");
+		return;
+	}
+	
+	DedicatedSessionSubsystem->SetSessionId(SessionId);
+	BO_LOG_NET(Log, "BattleGameMode InitGame -SessionId=%s 보관",*SessionId);
+}
+
 void ABlackoutBattleGameMode::EndMatch(EBlackoutMatchEndReason Reason)
 {
 	ABlackoutGameState* GS = GetGameState<ABlackoutGameState>();
@@ -86,7 +117,16 @@ void ABlackoutBattleGameMode::EndMatch(EBlackoutMatchEndReason Reason)
 		case EBlackoutMatchEndReason::AllPlayersLeft:ReasonText =TEXT("AllPlayersLeft"); break;
 		case EBlackoutMatchEndReason::Timeout:ReasonText =TEXT("Timeout"); break;
 	}
-	BO_LOG_NET(Log, "EndMatch: Reason=%s", ReasonText);
+	BO_LOG_NET(Log, "EndMatch: Reason=%s", ReasonText)
+
+	// 매칭 서버에 종료 보고 - 데디 측에서만 Http 호출
+	if (UGameInstance* GameInstance = GetGameInstance())
+	{
+		if (UBlackoutDedicatedSessionSubsystem* DedicatedSessionSubsystem = GameInstance->GetSubsystem<UBlackoutDedicatedSessionSubsystem>())
+		{
+			DedicatedSessionSubsystem->ReportFinishToMatchmakingServer();
+		}
+	}
 }
 
 // 파티 전멸 감지 시 호출. 체크포인트 텔레포트 + PartyWipeRestart 정책 + Ready 리셋 + InCombatReady 복귀.
