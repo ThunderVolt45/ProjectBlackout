@@ -183,6 +183,12 @@ void UBlackoutGA_UseConsumable::EndAbility(const FGameplayAbilitySpecHandle Hand
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
 
+void UBlackoutGA_UseConsumable::ResetConsumableCooldown()
+{
+	ConsumableCooldownEndTime = 0.0f;
+	bStartedPredictedConsumableCooldown = false;
+}
+
 void UBlackoutGA_UseConsumable::ConsumeAndApplyEffect()
 {
 	if (bConsumableApplied || !PendingConsumableData)

@@ -27,6 +27,9 @@ public:
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
 	virtual void EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled) override;
 
+	/** 지속 효과가 외부 상태 변화로 취소되었을 때 소모품 로컬 쿨다운을 초기화합니다. */
+	void ResetConsumableCooldown();
+
 protected:
 	/** SourceObject가 비어 있을 때 사용할 폴백 소모품 데이터입니다. BP GA에서 직접 지정할 수 있습니다. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Blackout|Consumable")
