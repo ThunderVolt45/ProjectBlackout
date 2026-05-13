@@ -76,7 +76,7 @@ Unreal Engine **5.7.4 바이너리 빌드(버전 고정)** 기반의 **Dedicated
   - `GA_Revive`: 쓰러진 아군 구출. 완료 시 **구출을 수행한 플레이어의 `RelicCharges` 어트리뷰트 1회 차감** 로직 포함.
   - `UBlackoutGA_UseConsumable`: 소모품 사용 공통 절차. `UBOConsumableData`를 읽어 PlayerState 소지량 차감, 쿨다운, 공통 GameplayEffect SetByCaller 주입을 담당.
   - `UBlackoutGA_UseBloodRoot`: 블러드 루트 사용. PlayerState의 블러드 루트 소지량 1 차감 후 ASC 지속 체력 회복 타이머를 시작.
-  - `GA_UseRelic`: 유물(Dragon Heart) 사용. Lock-in 애니메이션 재생과 동시에 `GE_RelicHeal` 이펙트로 즉각 체력 회복. 완료 시 `RelicCharges` 1회 차감. 시전 중 `State.Locked` 태그로 이동 및 액션 봉쇄.
+  - `GA_UseRelic`: 유물(Dragon Heart) 사용. 사용 애니메이션 재생과 동시에 `GE_RelicHeal` 이펙트로 즉각 체력 회복. 완료 시 `RelicCharges` 1회 차감. 시전 중 이동 입력은 유지하며, `State.UseRelic` 태그로 유물 사용 상태만 구분합니다. 이동 차단용 `State.Locked` 태그는 부여하지 않습니다.
   - `UBlackoutGA_UseGulSerum`: 굴 혈청 사용. PlayerState의 굴 혈청 소지량 1 차감 후 ASC 임시 스태미나 소비 배율을 적용하여 60초간 스태미나 소비 50% 감소.
 - **미니언 패턴 GA**:
   - `GA_Minion_MeleeAttack`: 미니언(Root Hollow)의 박치기 등 기본 근접 공격. 타격 판정(Sweep, Overlap)에 맞춰 타겟에게 `GE_Damage` 부여.

@@ -10,7 +10,7 @@ struct FGameplayEventData;
 
 /**
  * 유물 사용 어빌리티.
- * Lock-in 몽타주 동안 행동을 봉쇄하고, 적용 시점에 RelicCharges를 차감한 뒤 체력을 즉시 회복합니다.
+ * 사용 몽타주 동안 이동 입력은 유지하고, 적용 시점에 RelicCharges를 차감한 뒤 체력을 즉시 회복합니다.
  */
 UCLASS(Blueprintable)
 class PROJECTBLACKOUT_API UBlackoutGA_UseRelic : public UBlackoutGameplayAbility

@@ -23,7 +23,6 @@ UBlackoutGA_UseRelic::UBlackoutGA_UseRelic()
 	AssetTags.AddTag(BlackoutGameplayTags::Ability_Player_UseRelic);
 	SetAssetTags(AssetTags);
 
-	//ActivationOwnedTags.AddTag(BlackoutGameplayTags::State_Locked);
 	ActivationOwnedTags.AddTag(BlackoutGameplayTags::State_UseRelic);
 	ActivationBlockedTags.AddTag(BlackoutGameplayTags::State_Downed);
 	ActivationBlockedTags.AddTag(BlackoutGameplayTags::State_Locked);
