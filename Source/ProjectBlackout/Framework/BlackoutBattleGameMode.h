@@ -28,6 +28,12 @@ public:
 	// ClientTravel URL SessionId DedicatedSessionSubsystem에 위임
 	// 데디만 사용
 	virtual void InitGame(const FString& MapName, const FString& Options, FString& ErrorMessage) override;
+	
+	UPROPERTY(EditDefaultsOnly, Category="Blackout|Battle|Players")
+	TArray<TSubclassOf<APawn>> PlayerClassPool;
+
+	
+	virtual UClass* GetDefaultPawnClassForController_Implementation(AController* InController) override;
 
 protected:
 	// 플레이어 접속 시 전투 진입 자원 초기화 정책 적용 (LobbyToBattle).
@@ -41,4 +47,11 @@ protected:
 	// 마지막으로 활성화된 화톳불. 파티 전멸 시 이 액터 위치로 복귀.
 	UPROPERTY(BlueprintReadOnly, Category = "Blackout|Battle")
 	TObjectPtr<AActor> CurrentCheckpointActor;
+	
+	// 시연용
+	UPROPERTY(EditDefaultsOnly ,BlueprintReadOnly , Category = "Blackout|Battle|Demo")
+	bool bAutoStartOnFull = true;
+	
+private:
+	int32 NextPlayerClassIndex =0;
 };
