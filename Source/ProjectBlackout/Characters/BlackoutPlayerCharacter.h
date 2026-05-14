@@ -52,7 +52,7 @@ class PROJECTBLACKOUT_API ABlackoutPlayerCharacter : public ABlackoutCharacterBa
 	GENERATED_BODY()
 
 public:
-	ABlackoutPlayerCharacter();
+	ABlackoutPlayerCharacter(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 	
 	virtual void BeginPlay() override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
@@ -167,6 +167,8 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "Blackout|Animation")
 	bool IsReviveMontagePlaying() const { return bIsReviveMontagePlaying; }
+
+	void SetLocalSprintCameraActive(bool bActive) { bIsLocalSprintCameraActive = bActive; }
 
 	UFUNCTION(BlueprintPure, Category = "Blackout|Animation")
 	UAnimMontage* GetFireMontageForTag(FGameplayTag FireAnimTag) const;
@@ -324,6 +326,9 @@ protected:
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "Blackout|Animation")
 	bool bIsReviveMontagePlaying = false;
 
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Blackout|Camera")
+	bool bIsLocalSprintCameraActive = false;
+
 	/** 로컬 클라이언트에서 직전 downed 상태를 기억해 기상 몽타주 전환을 판별합니다. */
 	UPROPERTY(Transient)
 	bool bWasDownedLocally = false;
@@ -384,6 +389,9 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Blackout|Camera")
 	float SprintFOV = 96.f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Blackout|Camera")
+	float DodgeFOV = 94.f;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Blackout|Camera")
 	float AimCameraInterpSpeed = 12.f;
