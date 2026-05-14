@@ -699,6 +699,7 @@ void ABlackoutPlayerCharacter::ApplyDownedStateLocally()
 	bIsHitReactMontagePlaying = false;
 	bIsDodgeMontagePlaying = false;
 	bIsWeaponSwapMontagePlaying = false;
+	bIsReviveMontagePlaying = false;
 
 	if (UWorld* World = GetWorld())
 	{
@@ -773,6 +774,7 @@ void ABlackoutPlayerCharacter::OnDeath()
 	bIsHitReactMontagePlaying = false;
 	bIsDodgeMontagePlaying = false;
 	bIsWeaponSwapMontagePlaying = false;
+	bIsReviveMontagePlaying = false;
 
 	if (CombatComponent)
 	{
@@ -916,6 +918,13 @@ bool ABlackoutPlayerCharacter::PlayReviveMontage(UAnimMontage* Montage, float Pl
 	const float PlayResult = PlayAnimMontage(Montage, PlayRate);
 	if (PlayResult > 0.f)
 	{
+		bIsReviveMontagePlaying = true;
+
+		if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
+		{
+			MoveComp->StopMovementImmediately();
+		}
+
 		FOnMontageEnded MontageEndedDelegate;
 		MontageEndedDelegate.BindUObject(this, &ABlackoutPlayerCharacter::HandleReviveMontageEnded);
 		AnimInstance->Montage_SetEndDelegate(MontageEndedDelegate, Montage);
@@ -1052,6 +1061,8 @@ void ABlackoutPlayerCharacter::ScheduleWeaponVisibilityRestoreAfterRevive()
 
 void ABlackoutPlayerCharacter::HandleReviveMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 {
+	bIsReviveMontagePlaying = false;
+
 	if (!IsDowned() && !IsDead())
 	{
 		RestoreWeaponVisibilityAfterRevive();
@@ -1218,6 +1229,11 @@ void ABlackoutPlayerCharacter::DoMove(float Right, float Forward)
 	}
 
 	if (bIsDodgeMontagePlaying)
+	{
+		return;
+	}
+
+	if (bIsReviveMontagePlaying)
 	{
 		return;
 	}
