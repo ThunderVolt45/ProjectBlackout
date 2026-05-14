@@ -176,10 +176,10 @@ void UBlackoutGA_Dodge::StartMontageTask()
 		DodgeData->DodgeMontage,
 		1.f,
 		NAME_None,
-		/*bStopWhenAbilityEnds=*/true,
-		/*AnimRootMotionTranslationScale=*/1.f,
-		/*StartTimeSeconds=*/0.f,
-		/*bAllowInterruptAfterBlendOut=*/false);
+		true,
+		1.f,
+		0.f,
+		false);
 
 	if (!MontageTask)
 	{

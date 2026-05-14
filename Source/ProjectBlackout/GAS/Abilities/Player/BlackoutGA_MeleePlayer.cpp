@@ -82,10 +82,10 @@ void UBlackoutGA_MeleePlayer::ActivateAbility(const FGameplayAbilitySpecHandle H
 		MeleeComboData->MeleeMontage,
 		1.f,
 		StartSection.SectionName,
-		/*bStopWhenAbilityEnds=*/true,
-		/*AnimRootMotionTranslationScale=*/1.f,
-		/*StartTimeSeconds=*/0.f,
-		/*bAllowInterruptAfterBlendOut=*/false);
+		true,
+		1.f,
+		0.f,
+		false);
 
 	if (!MontageTask)
 	{
