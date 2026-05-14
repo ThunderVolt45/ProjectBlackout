@@ -158,11 +158,6 @@ void ABlackoutPlayerCharacter::OnRep_PlayerState()
 	}
 }
 
-void ABlackoutPlayerCharacter::Server_SetPendingDodgeInput_Implementation(FVector2D NewInput)
-{
-	PendingDodgeInput = NewInput;
-}
-
 void ABlackoutPlayerCharacter::Server_RequestDebugSelfDamage_Implementation(float DamageAmount)
 {
 	if (!HasAuthority())

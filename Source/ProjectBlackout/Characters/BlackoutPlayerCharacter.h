@@ -77,9 +77,6 @@ public:
 
 	void SetPendingDodgeInput(const FVector2D& NewInput) { PendingDodgeInput = NewInput; }
 
-	UFUNCTION(Server, Reliable, Category = "Blackout|Input")
-	void Server_SetPendingDodgeInput(FVector2D NewInput);
-
 	UFUNCTION(Server, Reliable, Category = "Blackout|Debug")
 	void Server_RequestDebugSelfDamage(float DamageAmount);
 
