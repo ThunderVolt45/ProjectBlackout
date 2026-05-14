@@ -167,8 +167,12 @@ void UBlackoutGA_FireWeapon::ActivateAbility(const FGameplayAbilitySpecHandle Ha
 		return;
 	}
 
+	const FGameplayTag FireAnimTag = EquippedFirearm->GetFireAnimTag();
+	// 시카고 타자기는 CombatComponent 자동사격 타이머를 발사 간격의 기준으로 사용합니다.
+	const bool bBypassFireRateGate = FireAnimTag.MatchesTagExact(BlackoutGameplayTags::Animation_Fire_ChicagoTypewriter);
+
 	// 단발/반자동 무기는 몽타주 유무와 무관하게 발사 간격을 강제로 보장합니다.
-	if (!CanFireAtCurrentTime(EquippedFirearm, ActorInfo))
+	if (!bBypassFireRateGate && !CanFireAtCurrentTime(EquippedFirearm, ActorInfo))
 	{
 		const float CurrentTimeSeconds = ActorInfo && ActorInfo->AvatarActor.IsValid() && ActorInfo->AvatarActor->GetWorld()
 			? ActorInfo->AvatarActor->GetWorld()->GetTimeSeconds()
@@ -198,11 +202,13 @@ void UBlackoutGA_FireWeapon::ActivateAbility(const FGameplayAbilitySpecHandle Ha
 		return;
 	}
 
-	ReserveNextFireTime(EquippedFirearm, ActorInfo);
+	if (!bBypassFireRateGate)
+	{
+		ReserveNextFireTime(EquippedFirearm, ActorInfo);
+	}
 
 	BO_LOG_GAS(Log, "GA_FireWeapon activated: Character=%s, Weapon=%s", *GetNameSafe(ActorInfo ? ActorInfo->AvatarActor.Get() : nullptr), *GetNameSafe(EquippedFirearm));
 
-	const FGameplayTag FireAnimTag = EquippedFirearm->GetFireAnimTag();
 	CachedFireMontage = PlayerCharacter ? PlayerCharacter->GetFireMontageForTag(FireAnimTag) : nullptr;
 	const bool bShouldWaitForFireMontageCompletion =
 		CachedFireMontage
