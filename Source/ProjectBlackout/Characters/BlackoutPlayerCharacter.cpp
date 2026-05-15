@@ -488,6 +488,42 @@ void ABlackoutPlayerCharacter::Multicast_ExecuteWeaponGameplayCue_Implementation
 	BO_LOG_GAS(Error, "Multicast_ExecuteWeaponGameplayCue failed: GameplayCueManager가 유효하지 않음 (Cue=%s)", *CueTag.ToString());
 }
 
+void ABlackoutPlayerCharacter::Multicast_ExecuteWeaponGameplayCueBatch_Implementation(const TArray<FBlackoutWeaponGameplayCueEntry>& CueEntries, bool bSkipLocallyControlled)
+{
+	if (GetNetMode() == NM_DedicatedServer)
+	{
+		return;
+	}
+
+	if (bSkipLocallyControlled && IsLocallyControlled() && GetNetMode() != NM_Standalone)
+	{
+		return;
+	}
+
+	if (CueEntries.IsEmpty())
+	{
+		return;
+	}
+
+	UGameplayCueManager* CueManager = UAbilitySystemGlobals::Get().GetGameplayCueManager();
+	if (!CueManager)
+	{
+		BO_LOG_GAS(Error, "Multicast_ExecuteWeaponGameplayCueBatch failed: GameplayCueManager가 유효하지 않음 (Count=%d)", CueEntries.Num());
+		return;
+	}
+
+	for (const FBlackoutWeaponGameplayCueEntry& CueEntry : CueEntries)
+	{
+		if (!CueEntry.CueTag.IsValid())
+		{
+			BO_LOG_GAS(Warning, "Multicast_ExecuteWeaponGameplayCueBatch skipped: CueTag가 유효하지 않음");
+			continue;
+		}
+
+		CueManager->HandleGameplayCue(this, CueEntry.CueTag, EGameplayCueEvent::Executed, CueEntry.CueParameters);
+	}
+}
+
 bool ABlackoutPlayerCharacter::PlayWeaponSwapMontage(FGameplayTag TargetWeaponSlotTag, float PlayRate)
 {
 	UAnimMontage* Montage = GetWeaponSwapMontageForSlot(TargetWeaponSlotTag);

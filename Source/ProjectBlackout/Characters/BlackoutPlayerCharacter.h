@@ -43,6 +43,21 @@ struct FBlackoutReloadMontageEntry
 };
 
 /**
+ * 한 번의 네트워크 호출로 여러 무기 GCN을 재생하기 위한 항목.
+ */
+USTRUCT(BlueprintType)
+struct FBlackoutWeaponGameplayCueEntry
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadOnly, Category = "Blackout|Cue")
+	FGameplayTag CueTag;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Blackout|Cue")
+	FGameplayCueParameters CueParameters;
+};
+
+/**
  * 플레이어블 캐릭터 (Assault / Demolition / Sniper 공통 베이스).
  * ASC는 ABlackoutPlayerState가 소유 → PossessedBy에서 InitAbilityActorInfo.
  * 무기/전투 로직(CombatComponent)은 Combat 에픽에서 확장.
@@ -125,6 +140,9 @@ public:
 
 	UFUNCTION(NetMulticast, Unreliable, Category = "Blackout|Cue")
 	void Multicast_ExecuteWeaponGameplayCue(FGameplayTag CueTag, FGameplayCueParameters CueParameters, bool bSkipLocallyControlled);
+
+	UFUNCTION(NetMulticast, Unreliable, Category = "Blackout|Cue")
+	void Multicast_ExecuteWeaponGameplayCueBatch(const TArray<FBlackoutWeaponGameplayCueEntry>& CueEntries, bool bSkipLocallyControlled);
 
 	UFUNCTION(BlueprintCallable, Category = "Blackout|Animation")
 	bool PlayWeaponSwapMontage(FGameplayTag TargetWeaponSlotTag, float PlayRate = 1.f);
