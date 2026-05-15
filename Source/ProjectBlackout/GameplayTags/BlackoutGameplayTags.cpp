@@ -60,6 +60,12 @@ namespace BlackoutGameplayTags
 	UE_DEFINE_GAMEPLAY_TAG(Weapon_Primary,   "Weapon.Primary");
 	UE_DEFINE_GAMEPLAY_TAG(Weapon_Secondary, "Weapon.Secondary");
 
+	// ─── Impact Surface ───────────────────────────────────────────────────────
+	UE_DEFINE_GAMEPLAY_TAG(Surface_Default, "Surface.Default");
+	UE_DEFINE_GAMEPLAY_TAG(Surface_Flesh,   "Surface.Flesh");
+	UE_DEFINE_GAMEPLAY_TAG(Surface_Metal,   "Surface.Metal");
+	UE_DEFINE_GAMEPLAY_TAG(Surface_Stone,   "Surface.Stone");
+
 	// ─── Shoot Animation ─────────────────────────────────────────────────────
 	UE_DEFINE_GAMEPLAY_TAG(Animation_Fire_RustyLeverAction,		"Animation.Fire.RustyLeverAction");
 	UE_DEFINE_GAMEPLAY_TAG(Animation_Fire_Sporebloom,			"Animation.Fire.Sporebloom");
@@ -67,7 +73,6 @@ namespace BlackoutGameplayTags
 	UE_DEFINE_GAMEPLAY_TAG(Animation_Fire_SecondaryCommon,		"Animation.Fire.SecondaryCommon");
 	
 	// ─── Reload Animation ─────────────────────────────────────────────────────
-	
 	UE_DEFINE_GAMEPLAY_TAG(Animation_Reload_ChicagoTypewriter, "Animation.Reload.ChicagoTypewriter");
 	UE_DEFINE_GAMEPLAY_TAG(Animation_Reload_RepeaterPistol,    "Animation.Reload.RepeaterPistol");
 	UE_DEFINE_GAMEPLAY_TAG(Animation_Reload_Sporebloom,        "Animation.Reload.Sporebloom");
@@ -82,7 +87,55 @@ namespace BlackoutGameplayTags
 	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Character_Hit, "GameplayCue.Character.Hit");
 	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Weapon_Fire,   "GameplayCue.Weapon.Fire");
 	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Weapon_Reload, "GameplayCue.Weapon.Reload");
-	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Weapon_MeridianGrenade_Explosion, "GameplayCue.Weapon.MeridianGrenade.Explosion");
+	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Weapon_Default_Fire, "GameplayCue.Weapon.Default.Fire");
+	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Weapon_Default_Trail, "GameplayCue.Weapon.Default.Trail");
+	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Weapon_Default_Impact_Default, "GameplayCue.Weapon.Default.Impact.Default");
+	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Weapon_Default_Impact_Flesh, "GameplayCue.Weapon.Default.Impact.Flesh");
+	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Weapon_Default_Impact_Metal, "GameplayCue.Weapon.Default.Impact.Metal");
+	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Weapon_Default_Impact_Stone, "GameplayCue.Weapon.Default.Impact.Stone");
+
+	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Weapon_ChicagoTypewriter_Fire, "GameplayCue.Weapon.ChicagoTypewriter.Fire");
+	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Weapon_ChicagoTypewriter_Trail, "GameplayCue.Weapon.ChicagoTypewriter.Trail");
+	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Weapon_ChicagoTypewriter_Impact_Default, "GameplayCue.Weapon.ChicagoTypewriter.Impact.Default");
+	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Weapon_ChicagoTypewriter_Impact_Flesh, "GameplayCue.Weapon.ChicagoTypewriter.Impact.Flesh");
+	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Weapon_ChicagoTypewriter_Impact_Metal, "GameplayCue.Weapon.ChicagoTypewriter.Impact.Metal");
+	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Weapon_ChicagoTypewriter_Impact_Stone, "GameplayCue.Weapon.ChicagoTypewriter.Impact.Stone");
+
+	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Weapon_RepeaterPistol_Fire, "GameplayCue.Weapon.RepeaterPistol.Fire");
+	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Weapon_RepeaterPistol_Trail, "GameplayCue.Weapon.RepeaterPistol.Trail");
+	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Weapon_RepeaterPistol_Impact_Default, "GameplayCue.Weapon.RepeaterPistol.Impact.Default");
+	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Weapon_RepeaterPistol_Impact_Flesh, "GameplayCue.Weapon.RepeaterPistol.Impact.Flesh");
+	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Weapon_RepeaterPistol_Impact_Metal, "GameplayCue.Weapon.RepeaterPistol.Impact.Metal");
+	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Weapon_RepeaterPistol_Impact_Stone, "GameplayCue.Weapon.RepeaterPistol.Impact.Stone");
+
+	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Weapon_Sporebloom_Fire, "GameplayCue.Weapon.Sporebloom.Fire");
+	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Weapon_Sporebloom_Trail, "GameplayCue.Weapon.Sporebloom.Trail");
+	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Weapon_Sporebloom_Impact_Default, "GameplayCue.Weapon.Sporebloom.Impact.Default");
+	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Weapon_Sporebloom_Impact_Flesh, "GameplayCue.Weapon.Sporebloom.Impact.Flesh");
+	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Weapon_Sporebloom_Impact_Metal, "GameplayCue.Weapon.Sporebloom.Impact.Metal");
+	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Weapon_Sporebloom_Impact_Stone, "GameplayCue.Weapon.Sporebloom.Impact.Stone");
+
+	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Weapon_Meridian_Fire, "GameplayCue.Weapon.Meridian.Fire");
+	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Weapon_Meridian_Trail, "GameplayCue.Weapon.Meridian.Trail");
+	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Weapon_Meridian_Impact_Default, "GameplayCue.Weapon.Meridian.Impact.Default");
+	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Weapon_Meridian_Impact_Flesh, "GameplayCue.Weapon.Meridian.Impact.Flesh");
+	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Weapon_Meridian_Impact_Metal, "GameplayCue.Weapon.Meridian.Impact.Metal");
+	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Weapon_Meridian_Impact_Stone, "GameplayCue.Weapon.Meridian.Impact.Stone");
+	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Weapon_Meridian_Explosion, "GameplayCue.Weapon.Meridian.Explosion");
+
+	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Weapon_RustyLeverAction_Fire, "GameplayCue.Weapon.RustyLeverAction.Fire");
+	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Weapon_RustyLeverAction_Trail, "GameplayCue.Weapon.RustyLeverAction.Trail");
+	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Weapon_RustyLeverAction_Impact_Default, "GameplayCue.Weapon.RustyLeverAction.Impact.Default");
+	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Weapon_RustyLeverAction_Impact_Flesh, "GameplayCue.Weapon.RustyLeverAction.Impact.Flesh");
+	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Weapon_RustyLeverAction_Impact_Metal, "GameplayCue.Weapon.RustyLeverAction.Impact.Metal");
+	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Weapon_RustyLeverAction_Impact_Stone, "GameplayCue.Weapon.RustyLeverAction.Impact.Stone");
+
+	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Weapon_DoubleBarrel_Fire, "GameplayCue.Weapon.DoubleBarrel.Fire");
+	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Weapon_DoubleBarrel_Trail, "GameplayCue.Weapon.DoubleBarrel.Trail");
+	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Weapon_DoubleBarrel_Impact_Default, "GameplayCue.Weapon.DoubleBarrel.Impact.Default");
+	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Weapon_DoubleBarrel_Impact_Flesh, "GameplayCue.Weapon.DoubleBarrel.Impact.Flesh");
+	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Weapon_DoubleBarrel_Impact_Metal, "GameplayCue.Weapon.DoubleBarrel.Impact.Metal");
+	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Weapon_DoubleBarrel_Impact_Stone, "GameplayCue.Weapon.DoubleBarrel.Impact.Stone");
 	
 	// ─── Ravager Abilities ──────────────────────────────────────────────────────
 	UE_DEFINE_GAMEPLAY_TAG(Ability_Ravager_Bite_Single, "Ability.Ravager.Bite.Single");

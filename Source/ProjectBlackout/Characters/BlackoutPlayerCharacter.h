@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "BlackoutCharacterBase.h"
+#include "GameplayEffectTypes.h"
 #include "GameplayTagContainer.h"
 #include "TimerManager.h"
 #include "BlackoutPlayerCharacter.generated.h"
@@ -121,6 +122,9 @@ public:
 
 	UFUNCTION(NetMulticast, Reliable, Category = "Blackout|Animation")
 	void Multicast_PlayWeaponSwapMontage(FGameplayTag TargetWeaponSlotTag, float PlayRate = 1.f);
+
+	UFUNCTION(NetMulticast, Unreliable, Category = "Blackout|Cue")
+	void Multicast_ExecuteWeaponGameplayCue(FGameplayTag CueTag, FGameplayCueParameters CueParameters, bool bSkipLocallyControlled);
 
 	UFUNCTION(BlueprintCallable, Category = "Blackout|Animation")
 	bool PlayWeaponSwapMontage(FGameplayTag TargetWeaponSlotTag, float PlayRate = 1.f);

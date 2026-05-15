@@ -121,7 +121,7 @@ classDiagram
   - `Body.WeakSpot` / `Body.ArmoredLimb` 태그 배율은 `BuildDamageSpec`에서 `SetByCaller` 키로 주입.
   - 산탄 무기(`ABOShotgunFirearm`)는 탄약 Cost를 1회만 적용한 뒤 `FireShotgun`으로 펠릿별 히트스캔을 수행합니다. `BuildPelletDamageSpec`은 펠릿당 피해량을 `Data.Damage`로 주입하고, `FireShotgun` 결과의 `FBlackoutShotgunPelletHit` 배열은 디버그 표시와 멀티타겟 보상 집계의 입력으로 사용합니다.
   - 로비에서는 `LobbyTag.InfiniteAmmo` 분기로 Cost 체크 스킵(TDD §7.1).
-  - Cue: `GCN_Weapon_Fire [Static]` 일회성 호출.
+  - Cue: 무기별 `FBlackoutWeaponCueSet`을 읽어 발사/탄 궤적/피격 Cue를 서버에서 실행합니다. 상세 구조는 [10_Weapon_GameplayCue_Set.md](10_Weapon_GameplayCue_Set.md)를 참조합니다.
 - **`UGA_Reload`**:
   - 완료 시 `ExecCalc_Reload`(`UGameplayEffectExecutionCalculation`)가 `ReserveAmmo -= Missing`, `ClipAmmo += Missing` 을 단일 트랜잭션으로 처리.
   - Cue: `GCN_Weapon_Reload [Static]`.

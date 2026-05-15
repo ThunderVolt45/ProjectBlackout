@@ -1,4 +1,5 @@
 #include "BlackoutPlayerCharacter.h"
+#include "AbilitySystemGlobals.h"
 #include "BlackoutAbilitySystemComponent.h"
 #include "Characters/BlackoutPlayerMovementComponent.h"
 #include "Combat/Components/BlackoutCombatComponent.h"
@@ -13,6 +14,7 @@
 #include "Animation/AnimMontage.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "GameplayCueManager.h"
 #include "BlackoutLog.h"
 #include "EnhancedInputComponent.h"
 #include "GAS/Attributes/BlackoutBaseAttributeSet.h"
@@ -457,6 +459,33 @@ bool ABlackoutPlayerCharacter::PlayHitReactMontage(UAnimMontage* Montage, float 
 void ABlackoutPlayerCharacter::Multicast_PlayWeaponSwapMontage_Implementation(FGameplayTag TargetWeaponSlotTag, float PlayRate)
 {
 	PlayWeaponSwapMontage(TargetWeaponSlotTag, PlayRate);
+}
+
+void ABlackoutPlayerCharacter::Multicast_ExecuteWeaponGameplayCue_Implementation(FGameplayTag CueTag, FGameplayCueParameters CueParameters, bool bSkipLocallyControlled)
+{
+	if (GetNetMode() == NM_DedicatedServer)
+	{
+		return;
+	}
+
+	if (bSkipLocallyControlled && IsLocallyControlled() && GetNetMode() != NM_Standalone)
+	{
+		return;
+	}
+
+	if (!CueTag.IsValid())
+	{
+		BO_LOG_GAS(Warning, "Multicast_ExecuteWeaponGameplayCue skipped: CueTag가 유효하지 않음");
+		return;
+	}
+
+	if (UGameplayCueManager* CueManager = UAbilitySystemGlobals::Get().GetGameplayCueManager())
+	{
+		CueManager->HandleGameplayCue(this, CueTag, EGameplayCueEvent::Executed, CueParameters);
+		return;
+	}
+
+	BO_LOG_GAS(Error, "Multicast_ExecuteWeaponGameplayCue failed: GameplayCueManager가 유효하지 않음 (Cue=%s)", *CueTag.ToString());
 }
 
 bool ABlackoutPlayerCharacter::PlayWeaponSwapMontage(FGameplayTag TargetWeaponSlotTag, float PlayRate)

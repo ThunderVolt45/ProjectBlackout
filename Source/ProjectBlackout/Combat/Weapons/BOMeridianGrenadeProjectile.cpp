@@ -45,7 +45,7 @@ ABOMeridianGrenadeProjectile::ABOMeridianGrenadeProjectile()
 	Movement->InitialSpeed = 1800.0f;
 	Movement->MaxSpeed = 2500.0f;
 
-	ExplosionCueTag = BlackoutGameplayTags::GameplayCue_Weapon_MeridianGrenade_Explosion;
+	ExplosionCueTag = BlackoutGameplayTags::GameplayCue_Weapon_Meridian_Explosion;
 	ApplyProjectileSettingsToComponents();
 }
 
@@ -81,6 +81,12 @@ void ABOMeridianGrenadeProjectile::OnReturnToPool_Implementation()
 void ABOMeridianGrenadeProjectile::InitFromSpec(const FGameplayEffectSpecHandle& InDamageSpec, float Radius)
 {
 	Super::InitFromSpec(InDamageSpec, Radius);
+	ExplosionDamageSpec = InDamageSpec;
+}
+
+void ABOMeridianGrenadeProjectile::InitFromSpec(const FGameplayEffectSpecHandle& InDamageSpec, float Radius, const FBlackoutWeaponCueSet& InCueSet)
+{
+	Super::InitFromSpec(InDamageSpec, Radius, InCueSet);
 	ExplosionDamageSpec = InDamageSpec;
 }
 
@@ -175,6 +181,7 @@ void ABOMeridianGrenadeProjectile::OnHit(UPrimitiveComponent* HitComponent, AAct
 	}
 
 	ApplyImpactDamage(OtherActor, OtherComp, Hit);
+	ExecuteImpactCue(Hit);
 }
 
 void ABOMeridianGrenadeProjectile::ResetGrenadeState()
