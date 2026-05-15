@@ -1,4 +1,4 @@
-#include "GAS/Abilities/Boss/GA_Ravager_EnergyBurst.h"
+#include "GAS/Abilities/Boss/Ravager//GA_Ravager_EnergyBurst.h"
 
 UGA_Ravager_EnergyBurst::UGA_Ravager_EnergyBurst()
 {

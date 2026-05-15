@@ -1,4 +1,4 @@
-#include "GAS/Abilities/Boss/GA_Shrewd_Lunge.h"
+#include "GAS/Abilities/Boss/Shrewd/GA_Shrewd_Lunge.h"
 
 UGA_Shrewd_Lunge::UGA_Shrewd_Lunge()
 {

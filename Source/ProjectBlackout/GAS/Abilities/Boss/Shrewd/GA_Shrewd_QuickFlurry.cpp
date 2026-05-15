@@ -1,4 +1,4 @@
-#include "GAS/Abilities/Boss/GA_Shrewd_QuickFlurry.h"
+#include "GAS/Abilities/Boss/Shrewd/GA_Shrewd_QuickFlurry.h"
 
 UGA_Shrewd_QuickFlurry::UGA_Shrewd_QuickFlurry()
 {

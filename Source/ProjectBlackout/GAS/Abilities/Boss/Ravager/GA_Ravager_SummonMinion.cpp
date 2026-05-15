@@ -1,4 +1,4 @@
-#include "GAS/Abilities/Boss/GA_Ravager_SummonMinion.h"
+#include "GAS/Abilities/Boss/Ravager/GA_Ravager_SummonMinion.h"
 
 UGA_Ravager_SummonMinion::UGA_Ravager_SummonMinion()
 {

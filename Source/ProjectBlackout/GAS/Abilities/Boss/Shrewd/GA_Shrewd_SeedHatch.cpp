@@ -1,4 +1,4 @@
-#include "GAS/Abilities/Boss/GA_Shrewd_SeedHatch.h"
+#include "GAS/Abilities/Boss/Shrewd/GA_Shrewd_SeedHatch.h"
 
 UGA_Shrewd_SeedHatch::UGA_Shrewd_SeedHatch()
 {

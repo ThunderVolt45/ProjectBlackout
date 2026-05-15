@@ -1,4 +1,4 @@
-#include "GAS/Abilities/Boss/GA_Shrewd_MeleeCombo.h"
+#include "GAS/Abilities/Boss/Shrewd/GA_Shrewd_MeleeCombo.h"
 
 UGA_Shrewd_MeleeCombo::UGA_Shrewd_MeleeCombo()
 {

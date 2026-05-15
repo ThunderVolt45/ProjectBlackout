@@ -1,4 +1,4 @@
-#include "GAS/Abilities/Boss/GA_Ravager_Gorenado.h"
+#include "GAS/Abilities/Boss/Ravager//GA_Ravager_Gorenado.h"
 
 UGA_Ravager_Gorenado::UGA_Ravager_Gorenado()
 {

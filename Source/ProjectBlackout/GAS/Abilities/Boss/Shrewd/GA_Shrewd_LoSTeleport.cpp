@@ -1,4 +1,4 @@
-#include "GAS/Abilities/Boss/GA_Shrewd_LoSTeleport.h"
+#include "GAS/Abilities/Boss/Shrewd/GA_Shrewd_LoSTeleport.h"
 
 UGA_Shrewd_LoSTeleport::UGA_Shrewd_LoSTeleport()
 {

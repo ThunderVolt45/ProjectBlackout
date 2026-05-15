@@ -1,4 +1,4 @@
-#include "GAS/Abilities/Boss/GA_Ravager_Shockwave.h"
+#include "GAS/Abilities/Boss/Ravager/GA_Ravager_Shockwave.h"
 
 UGA_Ravager_Shockwave::UGA_Ravager_Shockwave()
 {

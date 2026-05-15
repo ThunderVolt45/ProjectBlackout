@@ -1,4 +1,4 @@
-#include "GAS/Abilities/Boss/GA_Shrewd_ExplosiveArrow.h"
+#include "GAS/Abilities/Boss/Shrewd/GA_Shrewd_ExplosiveArrow.h"
 
 UGA_Shrewd_ExplosiveArrow::UGA_Shrewd_ExplosiveArrow()
 {
