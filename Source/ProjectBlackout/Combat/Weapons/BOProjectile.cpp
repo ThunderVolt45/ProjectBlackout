@@ -2,9 +2,11 @@
 
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemInterface.h"
+#include "Characters/BlackoutPlayerCharacter.h"
 #include "Combat/Components/BlackoutHitboxComponent.h"
 #include "Combat/BlackoutWeaponCueLibrary.h"
 #include "Components/SphereComponent.h"
+#include "Core/BlackoutLog.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Interfaces/BlackoutDamageable.h"
 #include "Net/UnrealNetwork.h"
@@ -201,7 +203,33 @@ void ABOProjectile::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor,
 
 void ABOProjectile::ExecuteImpactCue(const FHitResult& Hit) const
 {
-	UBlackoutWeaponCueLibrary::ExecuteImpactCue(GetCueAbilitySystemComponent(), CueSet, const_cast<ABOProjectile*>(this), Hit);
+	if (!Hit.bBlockingHit)
+	{
+		return;
+	}
+
+	const FGameplayTag SurfaceTag = UBlackoutWeaponCueLibrary::ResolveSurfaceTag(Hit);
+	const FGameplayTag ImpactCueTag = UBlackoutWeaponCueLibrary::ResolveImpactCueTag(CueSet, SurfaceTag);
+	if (!ImpactCueTag.IsValid())
+	{
+		BO_LOG_CORE(Warning, "ExecuteImpactCue skipped: ImpactCueTag가 유효하지 않음 (Projectile=%s)", *GetNameSafe(this));
+		return;
+	}
+
+	FGameplayCueParameters CueParameters = UBlackoutWeaponCueLibrary::BuildImpactCueParameters(const_cast<ABOProjectile*>(this), Hit);
+	if (ABlackoutPlayerCharacter* InstigatorCharacter = Cast<ABlackoutPlayerCharacter>(GetInstigator()))
+	{
+		InstigatorCharacter->Multicast_ExecuteWeaponGameplayCue(ImpactCueTag, CueParameters, false);
+		return;
+	}
+
+	if (ABlackoutPlayerCharacter* OwnerCharacter = Cast<ABlackoutPlayerCharacter>(GetOwner()))
+	{
+		OwnerCharacter->Multicast_ExecuteWeaponGameplayCue(ImpactCueTag, CueParameters, false);
+		return;
+	}
+
+	UBlackoutWeaponCueLibrary::ExecuteWeaponCue(GetCueAbilitySystemComponent(), ImpactCueTag, CueParameters);
 }
 
 UAbilitySystemComponent* ABOProjectile::GetCueAbilitySystemComponent() const

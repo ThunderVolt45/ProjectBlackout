@@ -136,6 +136,149 @@ namespace
 
 		TryShowPredictedDamageNumber(PlayerCharacter, PredictedHitResult, PredictedDamageAmount);
 	}
+
+	void BuildPredictedCueHitResult(
+		UWorld* World,
+		const FVector& TraceStart,
+		const FVector& TraceEnd,
+		const AActor* IgnoredOwner,
+		const AActor* IgnoredWeapon,
+		FHitResult& OutHitResult)
+	{
+		OutHitResult = FHitResult();
+		OutHitResult.TraceStart = TraceStart;
+		OutHitResult.TraceEnd = TraceEnd;
+
+		if (!World)
+		{
+			return;
+		}
+
+		FCollisionQueryParams QueryParams(SCENE_QUERY_STAT(BlackoutGA_FireWeapon_PredictedCue), false, IgnoredOwner);
+		QueryParams.bReturnPhysicalMaterial = true;
+		if (IgnoredWeapon)
+		{
+			QueryParams.AddIgnoredActor(IgnoredWeapon);
+		}
+
+		World->LineTraceSingleByChannel(
+			OutHitResult,
+			TraceStart,
+			TraceEnd,
+			BlackoutCollisionChannels::WeaponTrace,
+			QueryParams);
+
+		OutHitResult.TraceStart = TraceStart;
+		OutHitResult.TraceEnd = TraceEnd;
+	}
+
+	void ExecutePredictedWeaponCues(
+		UAbilitySystemComponent* AbilitySystemComponent,
+		ABlackoutPlayerCharacter* PlayerCharacter,
+		ABOFirearm* EquippedFirearm,
+		const FVector& MuzzleLocation,
+		const FVector& FireDirection,
+		const float FallbackTraceDistance)
+	{
+		if (!AbilitySystemComponent || !PlayerCharacter || !PlayerCharacter->IsLocallyControlled() || PlayerCharacter->HasAuthority() || !EquippedFirearm)
+		{
+			return;
+		}
+
+		const FBlackoutWeaponCueSet WeaponCueSet = EquippedFirearm->GetWeaponCueSet();
+		UBlackoutWeaponCueLibrary::ExecuteFireCue(AbilitySystemComponent, WeaponCueSet, EquippedFirearm, MuzzleLocation, FireDirection);
+
+		UWorld* World = PlayerCharacter->GetWorld();
+		const AActor* IgnoredOwner = EquippedFirearm->GetOwner();
+
+		if (const ABOShotgunFirearm* ShotgunFirearm = Cast<ABOShotgunFirearm>(EquippedFirearm))
+		{
+			const TArray<FVector> PelletDirections = ShotgunFirearm->BuildPelletDirections(FireDirection);
+			const float PelletTraceDistance = ShotgunFirearm->GetPelletTraceDistance();
+
+			for (const FVector& PelletDirection : PelletDirections)
+			{
+				const FVector PelletTraceEnd = MuzzleLocation + PelletDirection.GetSafeNormal() * PelletTraceDistance;
+				FHitResult PredictedHitResult;
+				BuildPredictedCueHitResult(World, MuzzleLocation, PelletTraceEnd, IgnoredOwner, EquippedFirearm, PredictedHitResult);
+
+				UBlackoutWeaponCueLibrary::ExecuteTrailCue(
+					AbilitySystemComponent,
+					WeaponCueSet,
+					EquippedFirearm,
+					MuzzleLocation,
+					PredictedHitResult,
+					PelletTraceEnd);
+				UBlackoutWeaponCueLibrary::ExecuteImpactCue(AbilitySystemComponent, WeaponCueSet, EquippedFirearm, PredictedHitResult);
+			}
+
+			return;
+		}
+
+		const FVector TraceEnd = MuzzleLocation + FireDirection.GetSafeNormal() * FallbackTraceDistance;
+		FHitResult PredictedHitResult;
+		if (EquippedFirearm->UsesHitscan())
+		{
+			BuildPredictedCueHitResult(World, MuzzleLocation, TraceEnd, IgnoredOwner, EquippedFirearm, PredictedHitResult);
+		}
+		else
+		{
+			PredictedHitResult.TraceStart = MuzzleLocation;
+			PredictedHitResult.TraceEnd = TraceEnd;
+		}
+
+		UBlackoutWeaponCueLibrary::ExecuteTrailCue(
+			AbilitySystemComponent,
+			WeaponCueSet,
+			EquippedFirearm,
+			MuzzleLocation,
+			PredictedHitResult,
+			TraceEnd);
+		UBlackoutWeaponCueLibrary::ExecuteImpactCue(AbilitySystemComponent, WeaponCueSet, EquippedFirearm, PredictedHitResult);
+	}
+
+	void MulticastTrailCueToRemoteProxies(
+		ABlackoutPlayerCharacter* CueOwner,
+		const FBlackoutWeaponCueSet& CueSet,
+		AActor* SourceActor,
+		const FVector& MuzzleLocation,
+		const FHitResult& HitResult,
+		const FVector& TraceEnd)
+	{
+		if (!CueOwner || !CueSet.TrailCueTag.IsValid())
+		{
+			return;
+		}
+
+		CueOwner->Multicast_ExecuteWeaponGameplayCue(
+			CueSet.TrailCueTag,
+			UBlackoutWeaponCueLibrary::BuildTrailCueParameters(SourceActor, MuzzleLocation, HitResult, TraceEnd),
+			true);
+	}
+
+	void MulticastImpactCueToRemoteProxies(
+		ABlackoutPlayerCharacter* CueOwner,
+		const FBlackoutWeaponCueSet& CueSet,
+		AActor* SourceActor,
+		const FHitResult& HitResult)
+	{
+		if (!CueOwner || !HitResult.bBlockingHit)
+		{
+			return;
+		}
+
+		const FGameplayTag SurfaceTag = UBlackoutWeaponCueLibrary::ResolveSurfaceTag(HitResult);
+		const FGameplayTag ImpactCueTag = UBlackoutWeaponCueLibrary::ResolveImpactCueTag(CueSet, SurfaceTag);
+		if (!ImpactCueTag.IsValid())
+		{
+			return;
+		}
+
+		CueOwner->Multicast_ExecuteWeaponGameplayCue(
+			ImpactCueTag,
+			UBlackoutWeaponCueLibrary::BuildImpactCueParameters(SourceActor, HitResult),
+			true);
+	}
 }
 
 UBlackoutGA_FireWeapon::UBlackoutGA_FireWeapon()
@@ -323,6 +466,15 @@ void UBlackoutGA_FireWeapon::ActivateAbility(const FGameplayAbilitySpecHandle Ha
 		}
 	}
 
+	// 예측 클라이언트는 발사 입력 직후 로컬 GCN을 실행하고, 서버 복제본은 예측키로 중복 재생을 억제합니다.
+	ExecutePredictedWeaponCues(
+		GetAbilitySystemComponentFromActorInfo(),
+		PlayerCharacter,
+		EquippedFirearm,
+		MuzzleLocation,
+		FireDirection,
+		ParallaxMaxDistance);
+
 	// 로컬 예측은 체감용 연출만 담당하고, 실제 월드 판정은 서버에서만 수행합니다.
 	if (PlayerCharacter->HasAuthority())
 	{
@@ -358,14 +510,14 @@ void UBlackoutGA_FireWeapon::ActivateAbility(const FGameplayAbilitySpecHandle Ha
 					? MuzzleLocation + FireDirection.GetSafeNormal() * ShotgunFirearm->GetPelletTraceDistance()
 					: FVector(PelletHit.HitResult.TraceEnd);
 
-				UBlackoutWeaponCueLibrary::ExecuteTrailCue(
-					AbilitySystemComponent,
+				MulticastTrailCueToRemoteProxies(
+					PlayerCharacter,
 					WeaponCueSet,
 					ShotgunFirearm,
 					MuzzleLocation,
 					PelletHit.HitResult,
 					PelletTraceEnd);
-				UBlackoutWeaponCueLibrary::ExecuteImpactCue(AbilitySystemComponent, WeaponCueSet, ShotgunFirearm, PelletHit.HitResult);
+				MulticastImpactCueToRemoteProxies(PlayerCharacter, WeaponCueSet, ShotgunFirearm, PelletHit.HitResult);
 			}
 		}
 		else
@@ -382,22 +534,22 @@ void UBlackoutGA_FireWeapon::ActivateAbility(const FGameplayAbilitySpecHandle Ha
 
 			if (EquippedFirearm->UsesHitscan())
 			{
-				UBlackoutWeaponCueLibrary::ExecuteTrailCue(
-					AbilitySystemComponent,
+				MulticastTrailCueToRemoteProxies(
+					PlayerCharacter,
 					WeaponCueSet,
 					EquippedFirearm,
 					MuzzleLocation,
 					ShotHitResult,
 					TraceEnd);
-				UBlackoutWeaponCueLibrary::ExecuteImpactCue(AbilitySystemComponent, WeaponCueSet, EquippedFirearm, ShotHitResult);
+				MulticastImpactCueToRemoteProxies(PlayerCharacter, WeaponCueSet, EquippedFirearm, ShotHitResult);
 			}
 			else
 			{
 				FHitResult ProjectileTrailHit;
 				ProjectileTrailHit.TraceStart = MuzzleLocation;
 				ProjectileTrailHit.TraceEnd = TraceEnd;
-				UBlackoutWeaponCueLibrary::ExecuteTrailCue(
-					AbilitySystemComponent,
+				MulticastTrailCueToRemoteProxies(
+					PlayerCharacter,
 					WeaponCueSet,
 					EquippedFirearm,
 					MuzzleLocation,

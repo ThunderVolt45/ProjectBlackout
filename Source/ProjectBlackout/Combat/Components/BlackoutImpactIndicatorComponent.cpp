@@ -512,6 +512,7 @@ bool UBlackoutImpactIndicatorComponent::PerformWeaponTrace(const FVector& TraceS
 	}
 
 	FCollisionQueryParams QueryParams(SCENE_QUERY_STAT(BlackoutImpactIndicator_WeaponTrace), false, GetOwner());
+	QueryParams.bReturnPhysicalMaterial = true;
 	if (IgnoredActor)
 	{
 		QueryParams.AddIgnoredActor(IgnoredActor);
