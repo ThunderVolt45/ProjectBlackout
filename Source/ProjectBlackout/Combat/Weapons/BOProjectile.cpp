@@ -1,5 +1,9 @@
 #include "Combat/Weapons/BOProjectile.h"
+
+#include "AbilitySystemComponent.h"
+#include "AbilitySystemInterface.h"
 #include "Combat/Components/BlackoutHitboxComponent.h"
+#include "Combat/BlackoutWeaponCueLibrary.h"
 #include "Components/SphereComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Interfaces/BlackoutDamageable.h"
@@ -18,6 +22,8 @@ ABOProjectile::ABOProjectile()
 	Collision = CreateDefaultSubobject<USphereComponent>(TEXT("Collision"));
 	RootComponent = Collision;
 	Collision->OnComponentHit.AddDynamic(this, &ABOProjectile::OnHit);
+	// 충돌 HitResult에서 표면 재질 기반 GCN을 고를 수 있게 피지컬 머티리얼을 반환합니다.
+	Collision->bReturnMaterialOnMove = true;
 
 	Movement = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("Movement"));
 	Movement->bAutoActivate = false;
@@ -60,6 +66,7 @@ void ABOProjectile::OnReturnToPool_Implementation()
 
 	ApplyActiveState(false);
 	DamageSpec = FGameplayEffectSpecHandle();
+	CueSet = FBlackoutWeaponCueSet();
 
 	if (HasAuthority())
 	{
@@ -70,8 +77,14 @@ void ABOProjectile::OnReturnToPool_Implementation()
 
 void ABOProjectile::InitFromSpec(const FGameplayEffectSpecHandle& InDamageSpec, float Radius)
 {
+	InitFromSpec(InDamageSpec, Radius, FBlackoutWeaponCueSet());
+}
+
+void ABOProjectile::InitFromSpec(const FGameplayEffectSpecHandle& InDamageSpec, float Radius, const FBlackoutWeaponCueSet& InCueSet)
+{
 	DamageSpec = InDamageSpec;
 	SplashRadius = Radius;
+	CueSet = InCueSet;
 }
 
 void ABOProjectile::Launch(const FVector& Direction)
@@ -178,7 +191,35 @@ void ABOProjectile::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor,
 		}
 	}
 
+	if (HasAuthority())
+	{
+		ExecuteImpactCue(Hit);
+	}
+
 	ReturnToPool();
+}
+
+void ABOProjectile::ExecuteImpactCue(const FHitResult& Hit) const
+{
+	UBlackoutWeaponCueLibrary::ExecuteImpactCue(GetCueAbilitySystemComponent(), CueSet, const_cast<ABOProjectile*>(this), Hit);
+}
+
+UAbilitySystemComponent* ABOProjectile::GetCueAbilitySystemComponent() const
+{
+	if (IAbilitySystemInterface* AbilitySystemInterface = Cast<IAbilitySystemInterface>(GetInstigator()))
+	{
+		if (UAbilitySystemComponent* AbilitySystemComponent = AbilitySystemInterface->GetAbilitySystemComponent())
+		{
+			return AbilitySystemComponent;
+		}
+	}
+
+	if (IAbilitySystemInterface* AbilitySystemInterface = Cast<IAbilitySystemInterface>(GetOwner()))
+	{
+		return AbilitySystemInterface->GetAbilitySystemComponent();
+	}
+
+	return nullptr;
 }
 
 void ABOProjectile::ReturnToPool()

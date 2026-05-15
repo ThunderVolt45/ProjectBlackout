@@ -26,6 +26,7 @@ public class ProjectBlackout : ModuleRules
 			"GameplayTags",
 			"GameplayTasks",
 			"Niagara",
+			"PhysicsCore",
 			// Networking (Matchmaking System)
 			"HTTP",
 			"Json",

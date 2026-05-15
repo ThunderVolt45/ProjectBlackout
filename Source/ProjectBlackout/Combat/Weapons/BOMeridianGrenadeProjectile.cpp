@@ -84,6 +84,12 @@ void ABOMeridianGrenadeProjectile::InitFromSpec(const FGameplayEffectSpecHandle&
 	ExplosionDamageSpec = InDamageSpec;
 }
 
+void ABOMeridianGrenadeProjectile::InitFromSpec(const FGameplayEffectSpecHandle& InDamageSpec, float Radius, const FBlackoutWeaponCueSet& InCueSet)
+{
+	Super::InitFromSpec(InDamageSpec, Radius, InCueSet);
+	ExplosionDamageSpec = InDamageSpec;
+}
+
 void ABOMeridianGrenadeProjectile::Launch(const FVector& Direction)
 {
 	ResetGrenadeState();
@@ -175,6 +181,7 @@ void ABOMeridianGrenadeProjectile::OnHit(UPrimitiveComponent* HitComponent, AAct
 	}
 
 	ApplyImpactDamage(OtherActor, OtherComp, Hit);
+	ExecuteImpactCue(Hit);
 }
 
 void ABOMeridianGrenadeProjectile::ResetGrenadeState()

@@ -4,6 +4,7 @@
 #include "AbilitySystemComponent.h"
 #include "Animation/AnimMontage.h"
 #include "Characters/BlackoutPlayerCharacter.h"
+#include "Combat/BlackoutWeaponCueLibrary.h"
 #include "Combat/Components/BlackoutCombatComponent.h"
 #include "Combat/Components/BlackoutHitboxComponent.h"
 #include "Combat/Components/BlackoutImpactIndicatorComponent.h"
@@ -346,18 +347,63 @@ void UBlackoutGA_FireWeapon::ActivateAbility(const FGameplayAbilitySpecHandle Ha
 		if (ABOShotgunFirearm* ShotgunFirearm = Cast<ABOShotgunFirearm>(EquippedFirearm))
 		{
 			const FGameplayEffectSpecHandle PelletDamageSpecHandle = BuildPelletDamageSpec(ShotgunFirearm);
-			ShotgunFirearm->FireShotgun(FireDirection, PelletDamageSpecHandle);
+			const FBlackoutWeaponCueSet WeaponCueSet = ShotgunFirearm->GetWeaponCueSet();
+			UAbilitySystemComponent* AbilitySystemComponent = GetAbilitySystemComponentFromActorInfo();
+			UBlackoutWeaponCueLibrary::ExecuteFireCue(AbilitySystemComponent, WeaponCueSet, ShotgunFirearm, MuzzleLocation, FireDirection);
+
+			const TArray<FBlackoutShotgunPelletHit> PelletHits = ShotgunFirearm->FireShotgun(FireDirection, PelletDamageSpecHandle);
+			for (const FBlackoutShotgunPelletHit& PelletHit : PelletHits)
+			{
+				const FVector PelletTraceEnd = PelletHit.HitResult.TraceEnd.IsNearlyZero()
+					? MuzzleLocation + FireDirection.GetSafeNormal() * ShotgunFirearm->GetPelletTraceDistance()
+					: FVector(PelletHit.HitResult.TraceEnd);
+
+				UBlackoutWeaponCueLibrary::ExecuteTrailCue(
+					AbilitySystemComponent,
+					WeaponCueSet,
+					ShotgunFirearm,
+					MuzzleLocation,
+					PelletHit.HitResult,
+					PelletTraceEnd);
+				UBlackoutWeaponCueLibrary::ExecuteImpactCue(AbilitySystemComponent, WeaponCueSet, ShotgunFirearm, PelletHit.HitResult);
+			}
 		}
 		else
 		{
 			const FGameplayEffectSpecHandle DamageSpecHandle = BuildDamageSpec(EquippedFirearm);
-			EquippedFirearm->Fire(FireDirection, DamageSpecHandle);
-		}
+			const FBlackoutWeaponCueSet WeaponCueSet = EquippedFirearm->GetWeaponCueSet();
+			UAbilitySystemComponent* AbilitySystemComponent = GetAbilitySystemComponentFromActorInfo();
+			UBlackoutWeaponCueLibrary::ExecuteFireCue(AbilitySystemComponent, WeaponCueSet, EquippedFirearm, MuzzleLocation, FireDirection);
 
-		// 실제 월드에 영향을 주는 큐는 서버에서만 실행합니다.
-		if (UAbilitySystemComponent* AbilitySystemComponent = GetAbilitySystemComponentFromActorInfo())
-		{
-			AbilitySystemComponent->ExecuteGameplayCue(BlackoutGameplayTags::GameplayCue_Weapon_Fire);
+			const FHitResult ShotHitResult = EquippedFirearm->Fire(FireDirection, DamageSpecHandle);
+			const FVector TraceEnd = ShotHitResult.TraceEnd.IsNearlyZero()
+				? MuzzleLocation + FireDirection.GetSafeNormal() * ParallaxMaxDistance
+				: FVector(ShotHitResult.TraceEnd);
+
+			if (EquippedFirearm->UsesHitscan())
+			{
+				UBlackoutWeaponCueLibrary::ExecuteTrailCue(
+					AbilitySystemComponent,
+					WeaponCueSet,
+					EquippedFirearm,
+					MuzzleLocation,
+					ShotHitResult,
+					TraceEnd);
+				UBlackoutWeaponCueLibrary::ExecuteImpactCue(AbilitySystemComponent, WeaponCueSet, EquippedFirearm, ShotHitResult);
+			}
+			else
+			{
+				FHitResult ProjectileTrailHit;
+				ProjectileTrailHit.TraceStart = MuzzleLocation;
+				ProjectileTrailHit.TraceEnd = TraceEnd;
+				UBlackoutWeaponCueLibrary::ExecuteTrailCue(
+					AbilitySystemComponent,
+					WeaponCueSet,
+					EquippedFirearm,
+					MuzzleLocation,
+					ProjectileTrailHit,
+					TraceEnd);
+			}
 		}
 	}
 	else
