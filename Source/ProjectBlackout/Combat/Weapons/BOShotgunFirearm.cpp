@@ -44,6 +44,7 @@ TArray<FBlackoutShotgunPelletHit> ABOShotgunFirearm::FireShotgun(const FVector& 
 
 	FCollisionQueryParams QueryParams(SCENE_QUERY_STAT(BOShotgunFirearm_FireShotgun), false, GetOwner());
 	QueryParams.AddIgnoredActor(this);
+	QueryParams.bReturnPhysicalMaterial = true;
 
 	TMap<AActor*, int32> AppliedPelletCounts;
 
