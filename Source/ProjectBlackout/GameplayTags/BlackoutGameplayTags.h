@@ -63,6 +63,12 @@ namespace BlackoutGameplayTags
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Weapon_Primary);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Weapon_Secondary);
 
+	// ─── Impact Surface ───────────────────────────────────────────────────────
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Surface_Default);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Surface_Flesh);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Surface_Metal);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Surface_Stone);
+
 	// ─── Shoot Animation ─────────────────────────────────────────────────────
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Animation_Fire_RustyLeverAction);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Animation_Fire_Sporebloom);
@@ -84,7 +90,55 @@ namespace BlackoutGameplayTags
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Character_Hit);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Weapon_Fire);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Weapon_Reload);
-	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Weapon_MeridianGrenade_Explosion);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Weapon_Default_Fire);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Weapon_Default_Trail);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Weapon_Default_Impact_Default);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Weapon_Default_Impact_Flesh);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Weapon_Default_Impact_Metal);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Weapon_Default_Impact_Stone);
+
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Weapon_ChicagoTypewriter_Fire);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Weapon_ChicagoTypewriter_Trail);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Weapon_ChicagoTypewriter_Impact_Default);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Weapon_ChicagoTypewriter_Impact_Flesh);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Weapon_ChicagoTypewriter_Impact_Metal);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Weapon_ChicagoTypewriter_Impact_Stone);
+
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Weapon_RepeaterPistol_Fire);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Weapon_RepeaterPistol_Trail);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Weapon_RepeaterPistol_Impact_Default);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Weapon_RepeaterPistol_Impact_Flesh);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Weapon_RepeaterPistol_Impact_Metal);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Weapon_RepeaterPistol_Impact_Stone);
+
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Weapon_Sporebloom_Fire);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Weapon_Sporebloom_Trail);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Weapon_Sporebloom_Impact_Default);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Weapon_Sporebloom_Impact_Flesh);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Weapon_Sporebloom_Impact_Metal);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Weapon_Sporebloom_Impact_Stone);
+
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Weapon_Meridian_Fire);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Weapon_Meridian_Trail);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Weapon_Meridian_Impact_Default);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Weapon_Meridian_Impact_Flesh);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Weapon_Meridian_Impact_Metal);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Weapon_Meridian_Impact_Stone);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Weapon_Meridian_Explosion);
+
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Weapon_RustyLeverAction_Fire);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Weapon_RustyLeverAction_Trail);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Weapon_RustyLeverAction_Impact_Default);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Weapon_RustyLeverAction_Impact_Flesh);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Weapon_RustyLeverAction_Impact_Metal);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Weapon_RustyLeverAction_Impact_Stone);
+
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Weapon_DoubleBarrel_Fire);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Weapon_DoubleBarrel_Trail);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Weapon_DoubleBarrel_Impact_Default);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Weapon_DoubleBarrel_Impact_Flesh);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Weapon_DoubleBarrel_Impact_Metal);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Weapon_DoubleBarrel_Impact_Stone);
 	
 	// ─── Ravager Abilities ─────────────────────────────────────────────────────────
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Ravager_Bite_Single);
