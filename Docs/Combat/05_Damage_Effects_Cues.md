@@ -59,3 +59,4 @@ classDiagram
 - **GameplayCue 분리 (TDD §11)**:
   - `Static` — 일회성(총구 화염, 탄창 탈착음, 혈흔). 객체 인스턴스 없음.
   - `Actor` — 지속형(아직 전투 에픽에는 없음, 보스 Red Mist 등 AI 에픽에서 사용).
+- **무기별 Cue 세트**: 발사, 탄 궤적, 표면 재질별 Impact Cue는 무기 데이터의 `FBlackoutWeaponCueSet`에서 태그로 지정하고 서버 ASC에서 실행합니다. 상세 클래스 다이어그램은 [10_Weapon_GameplayCue_Set.md](10_Weapon_GameplayCue_Set.md)를 참조합니다.
