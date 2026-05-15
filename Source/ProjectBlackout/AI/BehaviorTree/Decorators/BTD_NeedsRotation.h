@@ -4,18 +4,18 @@
 
 #include "CoreMinimal.h"
 #include "BehaviorTree/BTDecorator.h"
-#include "UBTD_NeedsRotation.generated.h"
+#include "BTD_NeedsRotation.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class PROJECTBLACKOUT_API UUBTD_NeedsRotation : public UBTDecorator
+class PROJECTBLACKOUT_API UBTD_NeedsRotation : public UBTDecorator
 {
 	GENERATED_BODY()
 
 public:
-	UUBTD_NeedsRotation();
+	UBTD_NeedsRotation();
 
 	virtual bool CalculateRawConditionValue(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) const override;
 	virtual FString GetStaticDescription() const override;
