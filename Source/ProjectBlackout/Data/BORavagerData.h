@@ -24,9 +24,30 @@ struct FBossMeleeSettings
 	TArray<FName> HitboxComponentNames;
 	
 	UPROPERTY(EditAnywhere)
-	float DamageMagnitude = 0.f;
+	float DamageMagnitude = 10.f;
 	
 	bool IsValid() const { return Effect && DamageMagnitude > 0.f && HitboxComponentNames.Num() > 0; }
+};
+
+USTRUCT()
+struct FProjectileSpawnParams
+{
+	GENERATED_BODY()
+	 
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<UGameplayEffect> Effect;
+	
+	UPROPERTY(EditAnywhere)
+	float AbilityLevel = 1.f;
+	
+	UPROPERTY(EditAnywhere)
+	float LifeSpan = 5.f;
+	
+	UPROPERTY(EditAnywhere)
+	float Speed = 1300.f;
+	
+	UPROPERTY(EditAnywhere)
+	float DamageMagnitude = 10.f;
 };
 
 USTRUCT()
@@ -41,17 +62,16 @@ struct FBossProjectileSettings
 	FName SocketName = NAME_None;
 	
 	UPROPERTY(EditAnywhere)
-	float Speed = 200.f;
+	FProjectileSpawnParams ProjectileSpawnParams;
 	
-	bool IsValid() const { return ProjectileClass != nullptr; }
+	bool IsValid() const { return ProjectileSpawnParams.Effect && ProjectileSpawnParams.DamageMagnitude > 0.f && ProjectileClass != nullptr; }
 };
 
 UCLASS()
 class PROJECTBLACKOUT_API UBORavagerData : public UDataAsset
 {
 	GENERATED_BODY()
-	
-	
+
 public:
 	UPROPERTY(EditAnywhere, Category = "Blackout|Ability")
 	TSubclassOf<UGameplayAbility> GrantedAbility;
