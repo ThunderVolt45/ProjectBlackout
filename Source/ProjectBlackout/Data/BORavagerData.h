@@ -11,6 +11,7 @@
 /**
  * 
  */
+class ABOEnemyProjectile; 
 
 USTRUCT()
 struct FBossMeleeSettings
@@ -56,7 +57,7 @@ struct FBossProjectileSettings
 	GENERATED_BODY()
 	
 	UPROPERTY(EditAnywhere)
-	TSubclassOf<AActor> ProjectileClass;
+	TSubclassOf<ABOEnemyProjectile> ProjectileClass;
 	
 	UPROPERTY(EditAnywhere)
 	FName SocketName = NAME_None;
@@ -64,7 +65,7 @@ struct FBossProjectileSettings
 	UPROPERTY(EditAnywhere)
 	FProjectileSpawnParams ProjectileSpawnParams;
 	
-	bool IsValid() const { return ProjectileSpawnParams.Effect && ProjectileSpawnParams.DamageMagnitude > 0.f && ProjectileClass != nullptr; }
+	bool IsValid() const;
 };
 
 UCLASS()
