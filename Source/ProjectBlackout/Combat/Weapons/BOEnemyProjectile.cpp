@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "Combat/Weapons/BOShockwaveProjectile.h"
+#include "Combat/Weapons/BOEnemyProjectile.h"
 
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
@@ -11,12 +11,14 @@
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 
-ABOShockwaveProjectile::ABOShockwaveProjectile()
+ABOEnemyProjectile::ABOEnemyProjectile()
 {
 	PrimaryActorTick.bCanEverTick = false;
+	
+	bReplicates = true;
+	
 	CollisionComp = CreateDefaultSubobject<UCapsuleComponent>(TEXT("Collision"));
 	CollisionComp->SetCollisionProfileName(TEXT("EnemyProjectile")); 
-	CollisionComp->OnComponentHit.AddDynamic(this, &ABOShockwaveProjectile::OnHit);
 	RootComponent = CollisionComp;
     
 	ProjectileMovement = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("Movement"));
@@ -31,14 +33,16 @@ ABOShockwaveProjectile::ABOShockwaveProjectile()
 	InitialLifeSpan = 5.f;  
 }
 
-void ABOShockwaveProjectile::InitializeProjectile(const FProjectileSpawnParams& InSpawnParams)
+void ABOEnemyProjectile::InitializeProjectile(const FProjectileSpawnParams& InSpawnParams)
 {
 	SpawnParams = InSpawnParams;
 	
-	if (InSpawnParams.Speed >= 0.f)
+	if (InSpawnParams.Speed > 0.f)
 	{
 		ProjectileMovement->InitialSpeed = InSpawnParams.Speed;
 		ProjectileMovement->MaxSpeed = InSpawnParams.Speed;
+		
+		ProjectileMovement->Velocity = GetActorForwardVector() * InSpawnParams.Speed;
 	}
 	
 	if (InSpawnParams.LifeSpan > 0.f)
@@ -47,19 +51,38 @@ void ABOShockwaveProjectile::InitializeProjectile(const FProjectileSpawnParams& 
 	}
 }
 
-void ABOShockwaveProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp,
-	FVector NormalImpulse, const FHitResult& Hit)
+void ABOEnemyProjectile::BeginPlay()
 {
-	if (!OtherActor || OtherActor == GetInstigator()) return;
+	Super::BeginPlay();
 	
-	if (!SpawnParams.Effect) { Destroy(); return; }
+	if (CollisionComp)
+	{
+		CollisionComp->OnComponentHit.AddDynamic(this, &ABOEnemyProjectile::OnHit);
+	}
+}
+
+void ABOEnemyProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp,
+                               FVector NormalImpulse, const FHitResult& Hit)
+{
+	if (ShouldIgnoreHit(OtherActor)) return;
 	
-	IBlackoutDamageable* Damageable = Cast<IBlackoutDamageable>(OtherActor);
-	if (!Damageable) { Destroy(); return; }
+	if (!HasAuthority()) return;
+	
+	ApplyDamageToTarget(OtherActor, Hit.BoneName);
+	Destroy();
+	
+}
+
+void ABOEnemyProjectile::ApplyDamageToTarget(AActor* Target, FName HitBoneName)
+{
+	if (!SpawnParams.Effect) return;
+	
+	IBlackoutDamageable* Damageable = Cast<IBlackoutDamageable>(Target);
+	if (!Damageable) return;
 	
 	UAbilitySystemComponent* OwnerASC = 
 	UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(GetInstigator());
-	if (!OwnerASC) { Destroy(); return; }
+	if (!OwnerASC) return;
 	
 	FGameplayEffectContextHandle EffectContext = OwnerASC->MakeEffectContext();
 	EffectContext.AddSourceObject(GetInstigator());
@@ -73,10 +96,19 @@ void ABOShockwaveProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherAc
 			BlackoutGameplayTags::Data_Damage, 
 			SpawnParams.DamageMagnitude);
         
-		Damageable->ReceiveDamageFromHitbox(SpecHandle, Hit.BoneName);
+		Damageable->ReceiveDamageFromHitbox(SpecHandle, HitBoneName);
 	}
-    
-	Destroy();
+}
+
+bool ABOEnemyProjectile::ShouldIgnoreHit(AActor* OtherActor) const
+{
+	if (!OtherActor) return true;
+	
+	if (OtherActor == GetInstigator()) return true;
+	
+	if (OtherActor == GetOwner()) return true;
+
+	return false;
 }
 
 

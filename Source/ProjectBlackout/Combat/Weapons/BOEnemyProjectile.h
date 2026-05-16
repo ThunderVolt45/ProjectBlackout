@@ -6,24 +6,31 @@
 #include "GameFramework/Actor.h"
 #include "Data/BORavagerData.h"
 
-#include "BOShockwaveProjectile.generated.h"
+#include "BOEnemyProjectile.generated.h"
 
+class UNiagaraComponent;
+class UCapsuleComponent;
+class UProjectileMovementComponent;
 
 UCLASS()
-class PROJECTBLACKOUT_API ABOShockwaveProjectile : public AActor
+class PROJECTBLACKOUT_API ABOEnemyProjectile : public AActor
 {
 	GENERATED_BODY()
 	
 public:	
-	ABOShockwaveProjectile();
+	ABOEnemyProjectile();
 	
-	void InitializeProjectile(const FProjectileSpawnParams& InSpawnParams);
+	virtual void InitializeProjectile(const FProjectileSpawnParams& InSpawnParams);
 	
 protected:
+	virtual void BeginPlay() override;
 	UFUNCTION()
 	void OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor,
 			   UPrimitiveComponent* OtherComp, FVector NormalImpulse,
 			   const FHitResult& Hit);
+	
+	virtual void ApplyDamageToTarget(AActor* Target, FName HitBoneName);
+	virtual bool ShouldIgnoreHit(AActor* OtherActor) const;
 	
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<UCapsuleComponent> CollisionComp;
