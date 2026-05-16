@@ -12,18 +12,18 @@ class PROJECTBLACKOUT_API UGA_Ravager_Shockwave : public UBlackoutBossGameplayAb
 {
 	GENERATED_BODY()
 
-public:
-	UGA_Ravager_Shockwave();
-
 protected:
-	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
+	virtual void PreActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
+	                                const FGameplayAbilityActivationInfo ActivationInfo,
+	                                const FGameplayEventData* TriggerEventData) override;
+	virtual void SetupEventListeners() override;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Blackout|Ability")
-	float ChargeDuration = 1.5f;
+	UFUNCTION()
+	void OnSpawnProjectileNotify(FGameplayEventData Payload);
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Blackout|Ability")
-	float TravelDistance = 2000.0f;
+	void ResolveSpawnTransform(FVector& OutLocation, FRotator& OutRotation) const;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Blackout|Ability")
-	bool bBreaksPillarOnHit = true;
+private:
+	UPROPERTY(Transient)
+	TObjectPtr<UAbilityTask_WaitGameplayEvent> WaitSpawnEvent;
 };
