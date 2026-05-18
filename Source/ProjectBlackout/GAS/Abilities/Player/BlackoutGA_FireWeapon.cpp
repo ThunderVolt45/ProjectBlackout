@@ -1,6 +1,7 @@
 #include "GAS/Abilities/Player/BlackoutGA_FireWeapon.h"
 
 #include "Abilities/Tasks/AbilityTask_WaitGameplayEvent.h"
+#include "AbilitySystemGlobals.h"
 #include "AbilitySystemComponent.h"
 #include "Animation/AnimMontage.h"
 #include "Characters/BlackoutPlayerCharacter.h"
@@ -15,6 +16,7 @@
 #include "Core/BlackoutLog.h"
 #include "DrawDebugHelpers.h"
 #include "Interfaces/BlackoutDamageable.h"
+#include "GameplayCueManager.h"
 #include "GameplayTags/BlackoutGameplayTags.h"
 #include "GAS/Attributes/BlackoutAmmoAttributeSet.h"
 #include "TimerManager.h"
@@ -172,6 +174,95 @@ namespace
 		OutHitResult.TraceEnd = TraceEnd;
 	}
 
+	void ExecuteLocalWeaponCue(AActor* CueTarget, const FGameplayTag& CueTag, const FGameplayCueParameters& CueParameters)
+	{
+		if (!CueTarget || !CueTag.IsValid())
+		{
+			return;
+		}
+
+		if (UGameplayCueManager* CueManager = UAbilitySystemGlobals::Get().GetGameplayCueManager())
+		{
+			CueManager->HandleGameplayCue(CueTarget, CueTag, EGameplayCueEvent::Executed, CueParameters);
+			return;
+		}
+
+		BO_LOG_GAS(Error, "ExecuteLocalWeaponCue failed: GameplayCueManager가 유효하지 않음 (Cue=%s)", *CueTag.ToString());
+	}
+
+	void ExecuteLocalTrailCue(
+		ABlackoutPlayerCharacter* CueTarget,
+		const FBlackoutWeaponCueSet& CueSet,
+		AActor* SourceActor,
+		const FVector& MuzzleLocation,
+		const FHitResult& HitResult,
+		const FVector& TraceEnd)
+	{
+		ExecuteLocalWeaponCue(
+			CueTarget,
+			CueSet.TrailCueTag,
+			UBlackoutWeaponCueLibrary::BuildTrailCueParameters(SourceActor, MuzzleLocation, HitResult, TraceEnd));
+	}
+
+	void ExecuteLocalImpactCue(
+		ABlackoutPlayerCharacter* CueTarget,
+		const FBlackoutWeaponCueSet& CueSet,
+		AActor* SourceActor,
+		const FHitResult& HitResult)
+	{
+		if (!HitResult.bBlockingHit)
+		{
+			return;
+		}
+
+		const FGameplayTag SurfaceTag = UBlackoutWeaponCueLibrary::ResolveSurfaceTag(HitResult);
+		const FGameplayTag ImpactCueTag = UBlackoutWeaponCueLibrary::ResolveImpactCueTag(CueSet, SurfaceTag);
+		ExecuteLocalWeaponCue(CueTarget, ImpactCueTag, UBlackoutWeaponCueLibrary::BuildImpactCueParameters(SourceActor, HitResult));
+	}
+
+	void AddTrailCueEntry(
+		TArray<FBlackoutWeaponGameplayCueEntry>& CueEntries,
+		const FBlackoutWeaponCueSet& CueSet,
+		AActor* SourceActor,
+		const FVector& MuzzleLocation,
+		const FHitResult& HitResult,
+		const FVector& TraceEnd)
+	{
+		if (!CueSet.TrailCueTag.IsValid())
+		{
+			return;
+		}
+
+		FBlackoutWeaponGameplayCueEntry CueEntry;
+		CueEntry.CueTag = CueSet.TrailCueTag;
+		CueEntry.CueParameters = UBlackoutWeaponCueLibrary::BuildTrailCueParameters(SourceActor, MuzzleLocation, HitResult, TraceEnd);
+		CueEntries.Add(CueEntry);
+	}
+
+	void AddImpactCueEntry(
+		TArray<FBlackoutWeaponGameplayCueEntry>& CueEntries,
+		const FBlackoutWeaponCueSet& CueSet,
+		AActor* SourceActor,
+		const FHitResult& HitResult)
+	{
+		if (!HitResult.bBlockingHit)
+		{
+			return;
+		}
+
+		const FGameplayTag SurfaceTag = UBlackoutWeaponCueLibrary::ResolveSurfaceTag(HitResult);
+		const FGameplayTag ImpactCueTag = UBlackoutWeaponCueLibrary::ResolveImpactCueTag(CueSet, SurfaceTag);
+		if (!ImpactCueTag.IsValid())
+		{
+			return;
+		}
+
+		FBlackoutWeaponGameplayCueEntry CueEntry;
+		CueEntry.CueTag = ImpactCueTag;
+		CueEntry.CueParameters = UBlackoutWeaponCueLibrary::BuildImpactCueParameters(SourceActor, HitResult);
+		CueEntries.Add(CueEntry);
+	}
+
 	void ExecutePredictedWeaponCues(
 		UAbilitySystemComponent* AbilitySystemComponent,
 		ABlackoutPlayerCharacter* PlayerCharacter,
@@ -202,14 +293,9 @@ namespace
 				FHitResult PredictedHitResult;
 				BuildPredictedCueHitResult(World, MuzzleLocation, PelletTraceEnd, IgnoredOwner, EquippedFirearm, PredictedHitResult);
 
-				UBlackoutWeaponCueLibrary::ExecuteTrailCue(
-					AbilitySystemComponent,
-					WeaponCueSet,
-					EquippedFirearm,
-					MuzzleLocation,
-					PredictedHitResult,
-					PelletTraceEnd);
-				UBlackoutWeaponCueLibrary::ExecuteImpactCue(AbilitySystemComponent, WeaponCueSet, EquippedFirearm, PredictedHitResult);
+				// 산탄은 같은 Cue 태그를 한 프레임에 여러 번 실행하므로 ASC의 중복 실행 병합을 우회합니다.
+				ExecuteLocalTrailCue(PlayerCharacter, WeaponCueSet, EquippedFirearm, MuzzleLocation, PredictedHitResult, PelletTraceEnd);
+				ExecuteLocalImpactCue(PlayerCharacter, WeaponCueSet, EquippedFirearm, PredictedHitResult);
 			}
 
 			return;
@@ -227,14 +313,8 @@ namespace
 			PredictedHitResult.TraceEnd = TraceEnd;
 		}
 
-		UBlackoutWeaponCueLibrary::ExecuteTrailCue(
-			AbilitySystemComponent,
-			WeaponCueSet,
-			EquippedFirearm,
-			MuzzleLocation,
-			PredictedHitResult,
-			TraceEnd);
-		UBlackoutWeaponCueLibrary::ExecuteImpactCue(AbilitySystemComponent, WeaponCueSet, EquippedFirearm, PredictedHitResult);
+		ExecuteLocalTrailCue(PlayerCharacter, WeaponCueSet, EquippedFirearm, MuzzleLocation, PredictedHitResult, TraceEnd);
+		ExecuteLocalImpactCue(PlayerCharacter, WeaponCueSet, EquippedFirearm, PredictedHitResult);
 	}
 
 	void MulticastTrailCueToRemoteProxies(
@@ -504,20 +584,22 @@ void UBlackoutGA_FireWeapon::ActivateAbility(const FGameplayAbilitySpecHandle Ha
 			UBlackoutWeaponCueLibrary::ExecuteFireCue(AbilitySystemComponent, WeaponCueSet, ShotgunFirearm, MuzzleLocation, FireDirection);
 
 			const TArray<FBlackoutShotgunPelletHit> PelletHits = ShotgunFirearm->FireShotgun(FireDirection, PelletDamageSpecHandle);
+			TArray<FBlackoutWeaponGameplayCueEntry> ShotgunCueEntries;
+			ShotgunCueEntries.Reserve(PelletHits.Num() * 2);
+
 			for (const FBlackoutShotgunPelletHit& PelletHit : PelletHits)
 			{
 				const FVector PelletTraceEnd = PelletHit.HitResult.TraceEnd.IsNearlyZero()
 					? MuzzleLocation + FireDirection.GetSafeNormal() * ShotgunFirearm->GetPelletTraceDistance()
 					: FVector(PelletHit.HitResult.TraceEnd);
 
-				MulticastTrailCueToRemoteProxies(
-					PlayerCharacter,
-					WeaponCueSet,
-					ShotgunFirearm,
-					MuzzleLocation,
-					PelletHit.HitResult,
-					PelletTraceEnd);
-				MulticastImpactCueToRemoteProxies(PlayerCharacter, WeaponCueSet, ShotgunFirearm, PelletHit.HitResult);
+				AddTrailCueEntry(ShotgunCueEntries, WeaponCueSet, ShotgunFirearm, MuzzleLocation, PelletHit.HitResult, PelletTraceEnd);
+				AddImpactCueEntry(ShotgunCueEntries, WeaponCueSet, ShotgunFirearm, PelletHit.HitResult);
+			}
+
+			if (!ShotgunCueEntries.IsEmpty())
+			{
+				PlayerCharacter->Multicast_ExecuteWeaponGameplayCueBatch(ShotgunCueEntries, true);
 			}
 		}
 		else
