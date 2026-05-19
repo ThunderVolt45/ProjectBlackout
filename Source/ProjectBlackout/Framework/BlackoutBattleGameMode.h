@@ -41,16 +41,24 @@ protected:
 	
 	virtual void OnPlayerLeft(AController* Exiting) override;
 
-	// 전원 Ready 시 보스 활성화 훅 + InCombat 전환.
+	// 전원 Ready 시 현재 쉘터 페이즈 → 해당 보스 전투로 전이 + 게이트 Open.
 	virtual void OnAllPlayersReady() override;
+
+	// GameState 생성 직후 초기 상태를 WaitingForPlayers 로 세팅.
+	virtual void InitGameState() override;
+
+	// c1 파티락: WaitingForPlayers 가 아니면 접속 거부 (시작 후 난입 차단. 재접속은 c2 별도 트랙).
+	virtual void PreLogin(const FString& Options, const FString& Address,
+		const FUniqueNetIdRepl& UniqueId, FString& ErrorMessage) override;
 
 	// 마지막으로 활성화된 화톳불. 파티 전멸 시 이 액터 위치로 복귀.
 	UPROPERTY(BlueprintReadOnly, Category = "Blackout|Battle")
 	TObjectPtr<AActor> CurrentCheckpointActor;
-	
-	// 시연용
+
+	// [테스트 전용] true 면 4인 충족 시 클래스선택/Ready UX 생략 즉시 전투 진입.
+	// 출시 빌드 기본 false — 활성 시 경고 로그로 silent ship 방지.
 	UPROPERTY(EditDefaultsOnly ,BlueprintReadOnly , Category = "Blackout|Battle|Demo")
-	bool bAutoStartOnFull = true;
+	bool bAutoStartOnFull = false;
 	
 private:
 	int32 NextPlayerClassIndex =0;

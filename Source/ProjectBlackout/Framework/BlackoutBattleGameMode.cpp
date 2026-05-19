@@ -1,5 +1,6 @@
 #include "BlackoutBattleGameMode.h"
 #include "BlackoutPlayerState.h"
+#include "BlackoutPlayerController.h"
 #include "BlackoutGameState.h"
 #include "BlackoutLog.h"
 #include "Core/BlackoutTypes.h"
@@ -51,22 +52,35 @@ void ABlackoutBattleGameMode::OnPlayerJoined(APlayerController* NewPlayer)
 		PS->ApplyBattleTransitionPolicy(EBattleTransitionType::LobbyToBattle);
 	}
 
-	// InCombat/Ended 이후는 재접속으로 되돌리지 않음. InLobby/Starting 에서만 InCombatReady 진입 허용.
-	// ServerTravel 직후 Battle GameState 는 InLobby 로 새로 생성됨 — Lobby 의 Starting 값은 승계 안됨.
+	// 정원 충족 → 시작 쉘터(ShelterPrep) 진입 + 클래스선택 UI. 단일맵 직행(ServerTravel 없음).
 	if (ConnectedPlayers.Num() == MaxPlayers)
 	{
 		if (ABlackoutGameState* GS = GetGameState<ABlackoutGameState>())
 		{
-			if (GS->CurrentMatchState == EBlackoutMatchState::InLobby ||
-				GS->CurrentMatchState == EBlackoutMatchState::Starting)
+			if (GS->CurrentMatchState == EBlackoutMatchState::WaitingForPlayers)
 			{
+				TransitionTo(EBlackoutMatchState::ShelterPrep);
+
+				for (const TObjectPtr<APlayerController>& PC : ConnectedPlayers)
+				{
+					if (ABlackoutPlayerController* BPC = Cast<ABlackoutPlayerController>(PC))
+					{
+						BPC->Client_OpenClassSelectUI();
+					}
+				}
+
 				if (bAutoStartOnFull)
 				{
-					GS->SetMatchState(EBlackoutMatchState::InCombat);
-					BO_LOG_NET(Log, "정원 충족 - 자동 InCombat (시연 모드)");
-				}else
-				{
-				GS->SetMatchState(EBlackoutMatchState::InCombatReady);
+					BO_LOG_NET(Warning,
+						"[테스트] bAutoStartOnFull — 클래스선택/Ready 생략. 출시 빌드면 비활성 필요");
+					for (APlayerState* PS : GameState->PlayerArray)
+					{
+						if (ABlackoutPlayerState* BPS = Cast<ABlackoutPlayerState>(PS))
+						{
+							BPS->bIsReady = true;
+						}
+					}
+					NotifyReadyChanged();  // 정상 Ready 경로로 합류
 				}
 			}
 		}
@@ -84,11 +98,26 @@ void ABlackoutBattleGameMode::OnPlayerLeft(AController* Exiting)
 // 전원 Ready 시 InCombat 전환 + 보스 활성화 훅. 실제 보스 활성 로직은 전투팀 합류 시 연결.
 void ABlackoutBattleGameMode::OnAllPlayersReady()
 {
-	if (ABlackoutGameState* GS = GetGameState<ABlackoutGameState>())
+	ABlackoutGameState* GS = GetGameState<ABlackoutGameState>();
+	if (!GS)
 	{
-		GS->SetMatchState(EBlackoutMatchState::InCombat);
+		return;
 	}
-	BO_LOG_NET(Log, "전원 Ready — InCombat 진입. 보스 활성화 훅 호출 대상");
+
+	switch (GS->CurrentMatchState)
+	{
+	case EBlackoutMatchState::ShelterPrep:
+		TransitionTo(EBlackoutMatchState::MidBossCombat);
+		break;
+	case EBlackoutMatchState::ShelterMid:
+		TransitionTo(EBlackoutMatchState::MainBossCombat);
+		break;
+	default:
+		return;  // 쉘터 페이즈가 아니면 무시
+	}
+
+	// TODO(Step4): 해당 보스 게이트 Open(). TODO(Shrewd 트랙): 보스 활성은 phase 전이 수신측에서.
+	BO_LOG_NET(Log, "전원 Ready — 보스 전투 전이 + 게이트 Open 대상");
 }
 
 // 화톳불 상호작용 시 호출되어 현재 체크포인트 액터 갱신.
@@ -134,6 +163,37 @@ void ABlackoutBattleGameMode::InitGame(const FString& MapName,
 
 	DedicatedSessionSubsystem->SetSessionId(SessionId);
 	BO_LOG_NET(Log, "BattleGameMode InitGame -SessionId=%s 보관", *SessionId);
+}
+
+void ABlackoutBattleGameMode::InitGameState()
+{
+	Super::InitGameState();
+
+	if (ABlackoutGameState* GS = GetGameState<ABlackoutGameState>())
+	{
+		GS->SetMatchState(EBlackoutMatchState::WaitingForPlayers);  // 초기 상태(전이표 비대상)
+	}
+}
+
+void ABlackoutBattleGameMode::PreLogin(const FString& Options, const FString& Address,
+	const FUniqueNetIdRepl& UniqueId, FString& ErrorMessage)
+{
+	Super::PreLogin(Options, Address, UniqueId, ErrorMessage);
+	if (!ErrorMessage.IsEmpty())
+	{
+		return;  // 상위에서 이미 거부
+	}
+
+	if (const ABlackoutGameState* GS = GetGameState<ABlackoutGameState>())
+	{
+		if (GS->CurrentMatchState != EBlackoutMatchState::WaitingForPlayers)
+		{
+			// ErrorMessage 비어있지 않으면 엔진이 접속 거부 (c1 파티락).
+			ErrorMessage = TEXT("Match already in progress");
+			BO_LOG_NET(Warning, "PreLogin 거부 — 매치 진행 중 (state=%s)",
+				*UEnum::GetValueAsString(GS->CurrentMatchState));
+		}
+	}
 }
 
 void ABlackoutBattleGameMode::EndMatch(EBlackoutMatchEndReason Reason)
