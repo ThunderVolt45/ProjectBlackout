@@ -5,8 +5,11 @@
 #include "Combat/Components/BlackoutCombatComponent.h"
 #include "Combat/Components/BlackoutImpactIndicatorComponent.h"
 #include "Data/BOCharacterData.h"
+#include "EngineUtils.h"
+#include "Engine/World.h"
 #include "Framework/BlackoutPlayerState.h"
 #include "AbilitySystemInterface.h"
+#include "GAS/Abilities/Player/BlackoutGA_Revive.h"
 #include "GameplayTags/BlackoutGameplayTags.h"
 #include "GameFramework/PlayerState.h"
 #include "Camera/CameraComponent.h"
@@ -14,9 +17,11 @@
 #include "Animation/AnimMontage.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Interfaces/BlackoutInteractable.h"
 #include "GameplayCueManager.h"
 #include "BlackoutLog.h"
 #include "EnhancedInputComponent.h"
+#include "Engine/OverlapResult.h"
 #include "GAS/Attributes/BlackoutBaseAttributeSet.h"
 #include "Net/UnrealNetwork.h"
 
@@ -79,6 +84,7 @@ void ABlackoutPlayerCharacter::Tick(float DeltaSeconds)
 		return;
 	}
 
+	UpdateFocusedInteractable(DeltaSeconds);
 	UpdateAimCamera(DeltaSeconds);
 }
 
@@ -124,6 +130,8 @@ void ABlackoutPlayerCharacter::PossessedBy(AController* NewController)
 		if (AbilitySystemComponent)
 		{
 			AbilitySystemComponent->InitAbilityActorInfo(GetPlayerState(), this);
+			BindDownedStateTagEvent();
+			ApplyReplicatedReviveInteractionStateTag();
 
 			// 초기 스탯 및 어빌리티 부여
 			InitializeAttributes();
@@ -162,6 +170,8 @@ void ABlackoutPlayerCharacter::OnRep_PlayerState()
 		if (AbilitySystemComponent)
 		{
 			AbilitySystemComponent->InitAbilityActorInfo(GetPlayerState(), this);
+			BindDownedStateTagEvent();
+			ApplyReplicatedReviveInteractionStateTag();
 
 			// 클라이언트에서도 어트리뷰트 초기화
 			InitializeAttributes();
@@ -227,6 +237,171 @@ void ABlackoutPlayerCharacter::Server_SetAimOffset_Implementation(FVector2D NewA
 	ReplicatedAimOffset = FVector2D(
 		FMath::Clamp(NewAimOffset.X, -180.f, 180.f),
 		FMath::Clamp(NewAimOffset.Y, -90.f, 90.f));
+}
+
+FVector ABlackoutPlayerCharacter::GetFocusedInteractablePromptWorldLocation() const
+{
+	AActor* TargetActor = FocusedInteractableActor.Get();
+	if (!IsValid(TargetActor))
+	{
+		return FVector::ZeroVector;
+	}
+
+	FVector BoundsOrigin = FVector::ZeroVector;
+	FVector BoundsExtent = FVector::ZeroVector;
+	TargetActor->GetActorBounds(false, BoundsOrigin, BoundsExtent);
+	return BoundsOrigin + FVector(0.0f, 0.0f, BoundsExtent.Z + InteractionPromptHeightOffset);
+}
+
+bool ABlackoutPlayerCharacter::TryInteractWithFocusedActor()
+{
+	RefreshFocusedInteractableActor();
+
+	AActor* TargetActor = FocusedInteractableActor.Get();
+	if (!IsValidFocusedInteractable(TargetActor))
+	{
+		return false;
+	}
+
+	if (HasAuthority())
+	{
+		IBlackoutInteractable::Execute_OnInteract(TargetActor, this);
+	}
+	else
+	{
+		Server_InteractWithActor(TargetActor);
+	}
+
+	return true;
+}
+
+bool ABlackoutPlayerCharacter::HasNearbyReviveTarget() const
+{
+	if (IsDead() || IsDowned())
+	{
+		return false;
+	}
+
+	const UWorld* World = GetWorld();
+	if (!World)
+	{
+		return false;
+	}
+
+	const float ReviveRange = UBlackoutGA_Revive::GetReviveRangeForActor(this);
+	const float ReviveRangeSquared = FMath::Square(ReviveRange);
+
+	for (TActorIterator<ABlackoutPlayerCharacter> It(World); It; ++It)
+	{
+		ABlackoutPlayerCharacter* Candidate = *It;
+		if (!Candidate || Candidate == this || Candidate->IsDead() || !Candidate->IsDowned())
+		{
+			continue;
+		}
+
+		if (FVector::DistSquared(Candidate->GetActorLocation(), GetActorLocation()) <= ReviveRangeSquared)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+void ABlackoutPlayerCharacter::UpdateFocusedInteractable(float DeltaSeconds)
+{
+	if (IsDead() || IsDowned())
+	{
+		FocusedInteractableActor = nullptr;
+		InteractionScanElapsed = 0.0f;
+		return;
+	}
+
+	InteractionScanElapsed += DeltaSeconds;
+	if (InteractionScanInterval > 0.0f && InteractionScanElapsed < InteractionScanInterval)
+	{
+		return;
+	}
+
+	InteractionScanElapsed = 0.0f;
+	RefreshFocusedInteractableActor();
+}
+
+void ABlackoutPlayerCharacter::RefreshFocusedInteractableActor()
+{
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		FocusedInteractableActor = nullptr;
+		return;
+	}
+
+	TArray<FOverlapResult> OverlapResults;
+	FCollisionObjectQueryParams ObjectQueryParams;
+	ObjectQueryParams.AddObjectTypesToQuery(ECC_WorldDynamic);
+	ObjectQueryParams.AddObjectTypesToQuery(ECC_WorldStatic);
+
+	FCollisionQueryParams QueryParams(SCENE_QUERY_STAT(BlackoutFocusedInteractable), false, this);
+	const bool bHasOverlap = World->OverlapMultiByObjectType(
+		OverlapResults,
+		GetActorLocation(),
+		FQuat::Identity,
+		ObjectQueryParams,
+		FCollisionShape::MakeSphere(InteractionSearchRadius),
+		QueryParams);
+
+	if (!bHasOverlap)
+	{
+		FocusedInteractableActor = nullptr;
+		return;
+	}
+
+	AActor* BestCandidate = nullptr;
+	float BestDistanceSquared = TNumericLimits<float>::Max();
+
+	for (const FOverlapResult& OverlapResult : OverlapResults)
+	{
+		AActor* CandidateActor = OverlapResult.GetActor();
+		if (!IsValidFocusedInteractable(CandidateActor))
+		{
+			continue;
+		}
+
+		const float DistanceSquared = FVector::DistSquared(CandidateActor->GetActorLocation(), GetActorLocation());
+		if (DistanceSquared < BestDistanceSquared)
+		{
+			BestDistanceSquared = DistanceSquared;
+			BestCandidate = CandidateActor;
+		}
+	}
+
+	FocusedInteractableActor = BestCandidate;
+}
+
+bool ABlackoutPlayerCharacter::IsValidFocusedInteractable(AActor* CandidateActor) const
+{
+	if (!IsValid(CandidateActor) || CandidateActor == this)
+	{
+		return false;
+	}
+
+	if (!CandidateActor->GetClass()->ImplementsInterface(UBlackoutInteractable::StaticClass()))
+	{
+		return false;
+	}
+
+	return IBlackoutInteractable::Execute_CanInteract(CandidateActor, const_cast<ABlackoutPlayerCharacter*>(this));
+}
+
+void ABlackoutPlayerCharacter::Server_InteractWithActor_Implementation(AActor* TargetActor)
+{
+	if (!IsValidFocusedInteractable(TargetActor))
+	{
+		BO_LOG_CORE(Verbose, "상호작용 무시: 서버에서 유효한 대상이 아닙니다. Player=%s Target=%s", *GetName(), *GetNameSafe(TargetActor));
+		return;
+	}
+
+	IBlackoutInteractable::Execute_OnInteract(TargetActor, this);
 }
 
 
@@ -789,6 +964,19 @@ void ABlackoutPlayerCharacter::HandleAimStateChanged(bool bNewAiming)
 	ApplyAimMovementMode(bNewAiming);
 }
 
+bool ABlackoutPlayerCharacter::IsReviving() const
+{
+	return AbilitySystemComponent
+		&& AbilitySystemComponent->HasMatchingGameplayTag(BlackoutGameplayTags::State_Reviving);
+}
+
+bool ABlackoutPlayerCharacter::IsBeingRevived() const
+{
+	return AbilitySystemComponent
+		? AbilitySystemComponent->HasMatchingGameplayTag(BlackoutGameplayTags::State_BeingRevived)
+		: bIsReviveInteractionActive;
+}
+
 bool ABlackoutPlayerCharacter::TryBeginReviveInteraction(ABlackoutPlayerCharacter* Reviver)
 {
 	if (!HasAuthority() || !Reviver || IsDead() || !IsDowned())
@@ -796,11 +984,11 @@ bool ABlackoutPlayerCharacter::TryBeginReviveInteraction(ABlackoutPlayerCharacte
 		return false;
 	}
 
-	if (bIsReviveInteractionActive)
+	if (IsBeingRevived())
 	{
 		if (!ActiveReviver.IsValid())
 		{
-			bIsReviveInteractionActive = false;
+			SetBeingRevivedStateActive(false);
 			BroadcastReviveInteractionStateChanged();
 		}
 		else
@@ -809,7 +997,8 @@ bool ABlackoutPlayerCharacter::TryBeginReviveInteraction(ABlackoutPlayerCharacte
 		}
 	}
 
-	bIsReviveInteractionActive = true;
+	SetBeingRevivedStateActive(true);
+	Reviver->SetRevivingStateActive(true);
 	ActiveReviver = Reviver;
 	BroadcastReviveInteractionStateChanged();
 	return true;
@@ -817,7 +1006,7 @@ bool ABlackoutPlayerCharacter::TryBeginReviveInteraction(ABlackoutPlayerCharacte
 
 void ABlackoutPlayerCharacter::EndReviveInteraction(ABlackoutPlayerCharacter* Reviver)
 {
-	if (!HasAuthority() || !bIsReviveInteractionActive)
+	if (!HasAuthority() || !IsBeingRevived())
 	{
 		return;
 	}
@@ -827,19 +1016,25 @@ void ABlackoutPlayerCharacter::EndReviveInteraction(ABlackoutPlayerCharacter* Re
 		return;
 	}
 
-	bIsReviveInteractionActive = false;
+	if (ABlackoutPlayerCharacter* CurrentReviver = ActiveReviver.Get())
+	{
+		CurrentReviver->SetRevivingStateActive(false);
+	}
+
+	SetBeingRevivedStateActive(false);
 	ActiveReviver = nullptr;
 	BroadcastReviveInteractionStateChanged();
 }
 
 void ABlackoutPlayerCharacter::OnRep_ReviveInteractionActive()
 {
+	ApplyReplicatedReviveInteractionStateTag();
 	BroadcastReviveInteractionStateChanged();
 }
 
 void ABlackoutPlayerCharacter::BroadcastReviveInteractionStateChanged()
 {
-	OnReviveInteractionStateChangedNative.Broadcast(this, bIsReviveInteractionActive);
+	OnReviveInteractionStateChangedNative.Broadcast(this, IsBeingRevived());
 }
 
 void ABlackoutPlayerCharacter::OnHitReact()
@@ -860,13 +1055,8 @@ void ABlackoutPlayerCharacter::OnHitReact()
 	Multicast_PlayHitReactMontage(HitReactMontage, 1.f);
 }
 
-void ABlackoutPlayerCharacter::HandleDownedStateChanged()
+void ABlackoutPlayerCharacter::HandleDownedStateChanged(bool bWasDowned, bool bIsCurrentlyDowned)
 {
-	const bool bWasDowned = bWasDownedLocally;
-	const bool bIsCurrentlyDowned = IsDowned();
-
-	bWasDownedLocally = bIsCurrentlyDowned;
-
 	if (bIsCurrentlyDowned)
 	{
 		ApplyDownedStateLocally();
@@ -944,8 +1134,6 @@ void ABlackoutPlayerCharacter::OnDowned()
 
 	EndReviveInteraction(nullptr);
 
-	ApplyDownedStateLocally();
-
 	if (DownedEnterMontage)
 	{
 		Multicast_PlayDownedEnterMontage(DownedEnterMontage, 1.f);
@@ -1006,12 +1194,9 @@ void ABlackoutPlayerCharacter::Server_ReviveFromDowned_Implementation(float Revi
 	const float MaxHealth = AbilitySystemComponent->GetNumericAttribute(UBlackoutBaseAttributeSet::GetMaxHealthAttribute());
 	const float ClampedHealth = FMath::Clamp(RevivedHealth, 1.f, MaxHealth);
 
-	AbilitySystemComponent->RemoveLooseGameplayTag(BlackoutGameplayTags::State_Downed);
-	bIsDowned = false;
+	SetDownedStateActive(false);
 	EndReviveInteraction(nullptr);
 	AbilitySystemComponent->SetNumericAttributeBase(UBlackoutBaseAttributeSet::GetHealthAttribute(), ClampedHealth);
-	BroadcastDownedStateChanged();
-	ClearDownedStateLocally();
 	ScheduleWeaponVisibilityRestoreAfterRevive();
 	BO_LOG_GAS(Log, "ReviveFromDowned: Target=%s Health=%.1f", *GetName(), ClampedHealth);
 }
@@ -1265,6 +1450,71 @@ void ABlackoutPlayerCharacter::HandleReviveMontageEnded(UAnimMontage* Montage, b
 	if (!IsDowned() && !IsDead())
 	{
 		RestoreWeaponVisibilityAfterRevive();
+	}
+}
+
+void ABlackoutPlayerCharacter::SetRevivingStateActive(bool bNewReviving)
+{
+	if (!AbilitySystemComponent)
+	{
+		return;
+	}
+
+	if (bNewReviving)
+	{
+		if (!AbilitySystemComponent->HasMatchingGameplayTag(BlackoutGameplayTags::State_Reviving))
+		{
+			AbilitySystemComponent->AddLooseGameplayTag(BlackoutGameplayTags::State_Reviving);
+		}
+	}
+	else
+	{
+		AbilitySystemComponent->RemoveLooseGameplayTag(BlackoutGameplayTags::State_Reviving);
+	}
+}
+
+void ABlackoutPlayerCharacter::SetBeingRevivedStateActive(bool bNewBeingRevived)
+{
+	if (HasAuthority())
+	{
+		bIsReviveInteractionActive = bNewBeingRevived;
+	}
+
+	if (!AbilitySystemComponent)
+	{
+		return;
+	}
+
+	if (bNewBeingRevived)
+	{
+		if (!AbilitySystemComponent->HasMatchingGameplayTag(BlackoutGameplayTags::State_BeingRevived))
+		{
+			AbilitySystemComponent->AddLooseGameplayTag(BlackoutGameplayTags::State_BeingRevived);
+		}
+	}
+	else
+	{
+		AbilitySystemComponent->RemoveLooseGameplayTag(BlackoutGameplayTags::State_BeingRevived);
+	}
+}
+
+void ABlackoutPlayerCharacter::ApplyReplicatedReviveInteractionStateTag()
+{
+	if (HasAuthority() || !AbilitySystemComponent)
+	{
+		return;
+	}
+
+	if (bIsReviveInteractionActive)
+	{
+		if (!AbilitySystemComponent->HasMatchingGameplayTag(BlackoutGameplayTags::State_BeingRevived))
+		{
+			AbilitySystemComponent->AddLooseGameplayTag(BlackoutGameplayTags::State_BeingRevived);
+		}
+	}
+	else
+	{
+		AbilitySystemComponent->RemoveLooseGameplayTag(BlackoutGameplayTags::State_BeingRevived);
 	}
 }
 

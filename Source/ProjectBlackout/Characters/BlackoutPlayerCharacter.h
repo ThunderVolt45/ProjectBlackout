@@ -17,6 +17,7 @@ class UGameplayEffect;
 class UInputAction;
 class UAnimMontage;
 class ABlackoutPlayerCharacter;
+class AActor;
 
 struct FInputActionValue;
 
@@ -203,12 +204,26 @@ public:
 	bool IsReviveMontagePlaying() const { return bIsReviveMontagePlaying; }
 
 	UFUNCTION(BlueprintPure, Category = "Blackout|Interaction")
-	bool IsReviveInteractionActive() const { return bIsReviveInteractionActive; }
+	bool IsReviveInteractionActive() const { return IsBeingRevived(); }
+
+	UFUNCTION(BlueprintPure, Category = "Blackout|Interaction")
+	bool IsReviving() const;
+
+	UFUNCTION(BlueprintPure, Category = "Blackout|Interaction")
+	bool IsBeingRevived() const;
+
+	UFUNCTION(BlueprintPure, Category = "Blackout|Interaction")
+	AActor* GetFocusedInteractableActor() const { return FocusedInteractableActor.Get(); }
+
+	UFUNCTION(BlueprintPure, Category = "Blackout|Interaction")
+	FVector GetFocusedInteractablePromptWorldLocation() const;
 
 	FBlackoutReviveInteractionStateChangedNativeSignature OnReviveInteractionStateChangedNative;
 
 	bool TryBeginReviveInteraction(ABlackoutPlayerCharacter* Reviver);
 	void EndReviveInteraction(ABlackoutPlayerCharacter* Reviver);
+	bool TryInteractWithFocusedActor();
+	bool HasNearbyReviveTarget() const;
 
 	void SetLocalSprintCameraActive(bool bActive) { bIsLocalSprintCameraActive = bActive; }
 
@@ -261,8 +276,8 @@ protected:
 	virtual void OnDowned() override;
 	virtual bool CanEnterDownedState() const override;
 	virtual void OnDeath() override;
-	virtual void HandleDownedStateChanged() override;
-
+	virtual void HandleDownedStateChanged(bool bWasDowned, bool bIsDowned) override;
+	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Blackout|Animation")
 	TObjectPtr<UAnimMontage> DeathMontage;
 
@@ -311,8 +326,12 @@ protected:
 	void RestoreWeaponVisibilityAfterRevive();
 	void ScheduleWeaponVisibilityRestoreAfterRevive();
 	void HandleReviveMontageEnded(UAnimMontage* Montage, bool bInterrupted);
-
-
+	void SetRevivingStateActive(bool bNewReviving);
+	void SetBeingRevivedStateActive(bool bNewBeingRevived);
+	void ApplyReplicatedReviveInteractionStateTag();
+	
+	
+	
 	// 플레이어 캐릭터 인풋 매핑 세팅 //
 #pragma region InputSetup
 
@@ -365,15 +384,27 @@ protected:
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "Blackout|Animation")
 	bool bIsReviveMontagePlaying = false;
 
+	/** 서버의 State.BeingRevived 태그를 클라이언트 로컬 ASC 태그로 옮기기 위한 복제 브리지입니다. */
 	UPROPERTY(Transient, ReplicatedUsing = OnRep_ReviveInteractionActive, BlueprintReadOnly, Category = "Blackout|Interaction")
 	bool bIsReviveInteractionActive = false;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Blackout|Interaction")
+	float InteractionSearchRadius = 180.0f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Blackout|Interaction", meta = (ClampMin = 0.0))
+	float InteractionScanInterval = 0.1f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Blackout|Interaction")
+	float InteractionPromptHeightOffset = 24.0f;
+
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Blackout|Interaction")
+	TWeakObjectPtr<AActor> FocusedInteractableActor;
+
+	UPROPERTY(Transient)
+	float InteractionScanElapsed = 0.0f;
+
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "Blackout|Camera")
 	bool bIsLocalSprintCameraActive = false;
-
-	/** 로컬 클라이언트에서 직전 downed 상태를 기억해 기상 몽타주 전환을 판별합니다. */
-	UPROPERTY(Transient)
-	bool bWasDownedLocally = false;
 
 	UPROPERTY(Transient)
 	TWeakObjectPtr<ABlackoutPlayerCharacter> ActiveReviver;
@@ -387,6 +418,12 @@ protected:
 	void OnRep_ReviveInteractionActive();
 
 	void BroadcastReviveInteractionStateChanged();
+	void UpdateFocusedInteractable(float DeltaSeconds);
+	void RefreshFocusedInteractableActor();
+	bool IsValidFocusedInteractable(AActor* CandidateActor) const;
+
+	UFUNCTION(Server, Reliable, Category = "Blackout|Interaction")
+	void Server_InteractWithActor(AActor* TargetActor);
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Blackout|Animation")
 	TObjectPtr<UAnimMontage> HitReactMontage;

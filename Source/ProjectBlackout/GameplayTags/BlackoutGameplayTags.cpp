@@ -4,6 +4,8 @@ namespace BlackoutGameplayTags
 {
 	// ─── Character State ───────────────────────────────────────────────────────
 	UE_DEFINE_GAMEPLAY_TAG(State_Downed,        "State.Downed");
+	UE_DEFINE_GAMEPLAY_TAG(State_Reviving,      "State.Reviving");
+	UE_DEFINE_GAMEPLAY_TAG(State_BeingRevived,  "State.BeingRevived");
 	UE_DEFINE_GAMEPLAY_TAG(State_Invulnerable,  "State.Invulnerable");
 	UE_DEFINE_GAMEPLAY_TAG(State_Locked,        "State.Locked");
 	UE_DEFINE_GAMEPLAY_TAG(State_Aiming,        "State.Aiming");
@@ -85,6 +87,7 @@ namespace BlackoutGameplayTags
 
 	// ─── Gameplay Cues ─────────────────────────────────────────────────────────
 	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Character_Hit, "GameplayCue.Character.Hit");
+	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Character_Revive, "GameplayCue.Character.Revive");
 	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Consumable_Use, "GameplayCue.Consumable.Use");
 	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Consumable_BloodRoot_Use, "GameplayCue.Consumable.BloodRoot.Use");
 	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Consumable_GulSerum_Use, "GameplayCue.Consumable.GulSerum.Use");
