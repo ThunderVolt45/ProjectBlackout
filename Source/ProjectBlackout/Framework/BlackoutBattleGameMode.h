@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "BlackoutGameMode.h"
+#include "Interfaces/BlackoutArenaResettable.h"
 #include "BlackoutBattleGameMode.generated.h"
 
 enum class EBlackoutMatchEndReason : uint8;
@@ -24,6 +25,10 @@ public:
 	// 화톳불 상호작용 시 외부에서 호출. CurrentCheckpointActor 갱신.
 	UFUNCTION(BlueprintCallable, Category = "Blackout|Battle")
 	virtual void HandleCheckpoint(AActor* BonfireActor);
+
+	// 보스 아레나가 BeginPlay 등에서 자기 등록. 전멸/체크포인트 복귀 시 ResetArena 호출 대상.
+	UFUNCTION(BlueprintCallable, Category = "Blackout|Battle")
+	void RegisterArena(TScriptInterface<IBlackoutArenaResettableInterface> Arena);
 	
 	// ClientTravel URL SessionId DedicatedSessionSubsystem에 위임
 	// 데디만 사용
@@ -54,6 +59,10 @@ protected:
 	// 마지막으로 활성화된 화톳불. 파티 전멸 시 이 액터 위치로 복귀.
 	UPROPERTY(BlueprintReadOnly, Category = "Blackout|Battle")
 	TObjectPtr<AActor> CurrentCheckpointActor;
+
+	// 현재 진행 중인 보스 아레나. 전멸/체크포인트 복귀 시 결정적 리셋 대상 (없으면 null).
+	UPROPERTY(BlueprintReadOnly, Category = "Blackout|Battle")
+	TScriptInterface<IBlackoutArenaResettableInterface> CurrentArena;
 
 	// [테스트 전용] true 면 4인 충족 시 클래스선택/Ready UX 생략 즉시 전투 진입.
 	// 출시 빌드 기본 false — 활성 시 경고 로그로 silent ship 방지.

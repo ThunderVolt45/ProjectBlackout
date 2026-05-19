@@ -132,6 +132,13 @@ void ABlackoutBattleGameMode::HandleCheckpoint(AActor* BonfireActor)
 	BO_LOG_NET(Log, "체크포인트 갱신: %s", *BonfireActor->GetName());
 }
 
+void ABlackoutBattleGameMode::RegisterArena(
+	TScriptInterface<IBlackoutArenaResettableInterface> Arena)
+{
+	CurrentArena = Arena;
+	BO_LOG_NET(Log, "아레나 등록: %s", *GetNameSafe(Arena.GetObject()));
+}
+
 void ABlackoutBattleGameMode::InitGame(const FString& MapName,
                                        const FString& Options,
                                        FString& ErrorMessage)
@@ -279,9 +286,24 @@ void ABlackoutBattleGameMode::HandlePartyWipe()
 		}
 	}
 
+	if (CurrentArena)
+	{
+		IBlackoutArenaResettableInterface::Execute_ResetArena(CurrentArena.GetObject());
+	}
+
 	if (ABlackoutGameState* GS = GetGameState<ABlackoutGameState>())
 	{
-		GS->SetMatchState(EBlackoutMatchState::InCombatReady);
+		switch (GS->CurrentMatchState)
+		{
+		case EBlackoutMatchState::MidBossCombat:
+			TransitionTo(EBlackoutMatchState::ShelterPrep);
+			break;
+		case EBlackoutMatchState::MainBossCombat:
+			TransitionTo(EBlackoutMatchState::ShelterMid);
+			break;
+		default:
+			break;
+		}
 	}
 
 	const FString Location = bHasCheckpoint
