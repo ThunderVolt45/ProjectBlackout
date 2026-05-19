@@ -90,6 +90,7 @@ namespace BlackoutGameplayTags
 
 	// ─── Gameplay Cues ─────────────────────────────────────────────────────────
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Character_Hit);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Character_Revive);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Consumable_Use);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Consumable_BloodRoot_Use);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Consumable_GulSerum_Use);
@@ -176,6 +177,8 @@ namespace BlackoutGameplayTags
 	
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Ravager_SpawnMinion);
 	
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Ravager_Gorenado);
+	
 	// ─── Wraith Abilities ─────────────────────────────────────────────────────────
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Wraith_FireTwinArrows);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Cooldown_Wraith_FireTwinArrows);
@@ -196,6 +199,9 @@ namespace BlackoutGameplayTags
 	// ─── Attack Events ────────────────────────────────────────────────────
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Event_Enemy_Attack_OnCollision);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Event_Enemy_Attack_OffCollision);
+	
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Event_Enemy_Attack_OnGorenado);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Event_Enemy_Attack_OffGorenado);
 	
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Event_Enemy_Attack_Spawn_Projectile);
 	
