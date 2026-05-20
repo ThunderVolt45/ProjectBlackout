@@ -24,7 +24,7 @@ public:
 
 protected:
 	/** 스프린트 중 기본 최대 속도에 곱해질 배수입니다. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Blackout|Movement", meta = (ClampMin = 1.0))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Blackout|Movement|Sprint", meta = (ClampMin = 1.0))
 	float SprintSpeedMultiplier = 1.5f;
 
 	/** 스프린트 입력이 눌린 상태인지 여부 */

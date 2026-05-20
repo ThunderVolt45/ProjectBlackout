@@ -179,10 +179,10 @@ public:
 	UFUNCTION(NetMulticast, Reliable, Category = "Blackout|Animation")
 	void Multicast_StopConsumableMontage(UAnimMontage* Montage, float BlendOutTime = 0.25f);
 
-	UFUNCTION(Client, Reliable, Category = "Blackout|Movement")
+	UFUNCTION(Client, Reliable, Category = "Blackout|Movement|Ability")
 	void Client_BeginAbilityMovementOverride(float SpeedMultiplier, bool bStopMovementImmediately, bool bAddLockedTag);
 
-	UFUNCTION(Client, Reliable, Category = "Blackout|Movement")
+	UFUNCTION(Client, Reliable, Category = "Blackout|Movement|Ability")
 	void Client_EndAbilityMovementOverride();
 
 	UFUNCTION(Server, Unreliable, Category = "Blackout|Animation")
