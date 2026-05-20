@@ -293,43 +293,34 @@ void ABlackoutPlayerState::RestoreAtCheckpoint()
 			SecondaryMaxClip);
 	}
 
-	// 예비탄약 회복 
-	if (const APawn* OwnerPawn = GetPawn())
+	// 예비탄약 + 소모품 회복 — PC/CombatComp 체인을 한 번만 거친다.
+	const APawn* OwnedPawn = GetPawn();
+	const ABlackoutPlayerCharacter* PC = OwnedPawn
+		? Cast<ABlackoutPlayerCharacter>(OwnedPawn)
+		: nullptr;
+	if (!PC)
 	{
-		if (const ABlackoutPlayerCharacter* PC = Cast<ABlackoutPlayerCharacter>(
-			OwnerPawn))
-		{
-			if (const UBlackoutCombatComponent* CombatComp = PC->
-				GetCombatComponent())
-			{
-				if (const ABOFirearm* Primary = CombatComp->GetPrimaryFirearm())
-				{
-					ASC->SetNumericAttributeBase(
-						UBlackoutAmmoAttributeSet::GetPrimaryReserveAmmoAttribute(),
-						static_cast<float>(Primary->GetMaxReserveAmmo()));
-				}
+		return;
+	}
 
-				if (const ABOFirearm* Secondary = CombatComp->
-					GetSecondaryFirearm())
-				{
-					ASC->SetNumericAttributeBase(
-						UBlackoutAmmoAttributeSet::GetSecondaryReserveAmmoAttribute(),
-						static_cast<float>(Secondary->GetMaxReserveAmmo())
-					);
-				}
-			}
+	if (const UBlackoutCombatComponent* CombatComp = PC->GetCombatComponent())
+	{
+		if (const ABOFirearm* Primary = CombatComp->GetPrimaryFirearm())
+		{
+			ASC->SetNumericAttributeBase(
+				UBlackoutAmmoAttributeSet::GetPrimaryReserveAmmoAttribute(),
+				static_cast<float>(Primary->GetMaxReserveAmmo()));
+		}
+		if (const ABOFirearm* Secondary = CombatComp->GetSecondaryFirearm())
+		{
+			ASC->SetNumericAttributeBase(
+				UBlackoutAmmoAttributeSet::GetSecondaryReserveAmmoAttribute(),
+				static_cast<float>(Secondary->GetMaxReserveAmmo()));
 		}
 	}
-	
-	// 소모품 회복 
-	if (const APawn* OwnedPawn = GetPawn())
+
+	if (const UBOCharacterData* CharData = PC->GetCharacterData())
 	{
-		if (const ABlackoutPlayerCharacter* PC = Cast<ABlackoutPlayerCharacter>(OwnedPawn))
-		{
-			if (const UBOCharacterData* CharData = PC->GetCharacterData())
-			{
-				InitializeConsumablesFromCharacterData(CharData);
-			}
-		}
+		InitializeConsumablesFromCharacterData(CharData);
 	}
 }

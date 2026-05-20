@@ -22,13 +22,13 @@ void ABlackoutCheckpoint::OnInteract_Implementation(AActor* Interactor)
 		return;
 	}
 	
-	APawn* InteractorPawn = Cast<APawn>(Interactor);
+	const APawn* InteractorPawn = Cast<APawn>(Interactor);
 	if (!InteractorPawn)
 	{
 		return;
 	}
-	
-	// 캐릭터 변경 UI 호출 
+
+	// 캐릭터 변경 UI 호출 — 상호작용한 클라에만 전송.
 	if (ABlackoutPlayerController* PC = Cast<ABlackoutPlayerController>(InteractorPawn->GetController()))
 	{
 		PC->Client_OpenClassSelectUI();

@@ -367,7 +367,7 @@ void UBlackoutGA_Reload::ApplyReloadEffect()
 			                                    : UBlackoutAmmoAttributeSet::GetPrimaryClipAmmoAttribute();
 		const FGameplayAttribute MaxClipAttr = bSecondary
 			                                       ? UBlackoutAmmoAttributeSet::GetSecondaryMaxClipAttribute()
-			                                       : UBlackoutAmmoAttributeSet::GetPrimaryMaxClipAttribute();;
+			                                       : UBlackoutAmmoAttributeSet::GetPrimaryMaxClipAttribute();
 		
 		const float MaxClip = AbilitySystemComponent->GetNumericAttribute(MaxClipAttr);
 		AbilitySystemComponent->SetNumericAttributeBase(ClipAttr,MaxClip);

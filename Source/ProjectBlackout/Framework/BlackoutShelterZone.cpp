@@ -139,7 +139,7 @@ void ABlackoutShelterZone::HandleMatchStateChanged(EBlackoutMatchState NewState)
 		}
 		else
 		{
-		 RemoveShelterEffects(Pawn);	
+			RemoveShelterEffects(Pawn);
 		}
 	}
 }
@@ -157,12 +157,11 @@ void ABlackoutShelterZone::ApplyShelterEffects(APawn* Pawn)
 		return;
 	}
 	
-	// PS ASC 사용 - PossessBy 의존 제거 , GA ActorInfo와 동일 ASC
+	// PS ASC 사용 — PossessedBy 의존 제거, GA ActorInfo와 동일 ASC.
 	if (UAbilitySystemComponent* ASC = PS->GetAbilitySystemComponent())
 	{
-		ASC -> AddLooseGameplayTag(BlackoutGameplayTags::State_InShelter);
+		ASC->AddLooseGameplayTag(BlackoutGameplayTags::State_InShelter);
 	}
-	
 
 	PS->ApplyBattleTransitionPolicy(EBattleTransitionType::CheckpointRest);
 
