@@ -1,7 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "BossPhase.h"
+#include "BOBossPhase.h"
 #include "UObject/Object.h"
 #include "BehaviorTree/BehaviorTreeTypes.h"
 #include "BossBTRunner.generated.h"
@@ -14,20 +14,20 @@ class PROJECTBLACKOUT_API UBossBTRunner : public UObject
 	GENERATED_BODY()
 
 public:
-	void Initialize(ABlackoutBossAIController* InController, const TMap<EBossPhase, TObjectPtr<UBehaviorTree>>& InTrees);
+	void Initialize(ABlackoutBossAIController* InController, const TMap<EBOBossPhase, TObjectPtr<UBehaviorTree>>& InTrees);
 
-	void RunPhaseBT(EBossPhase NewPhase);
+	void RunPhaseBT(EBOBossPhase NewPhase);
 
 	void StopBT();
 
-	EBossPhase GetCurrentPhase() const { return CurrentPhase; }
+	EBOBossPhase GetCurrentPhase() const { return CurrentPhase; }
 
 private:
 	UPROPERTY(Transient)
 	TObjectPtr<ABlackoutBossAIController> OwnerController;
 	
 	UPROPERTY(Transient)
-	TMap<EBossPhase, TObjectPtr<UBehaviorTree>> PhaseBehaviorTrees;
+	TMap<EBOBossPhase, TObjectPtr<UBehaviorTree>> PhaseBehaviorTrees;
 	
-	EBossPhase CurrentPhase;
+	EBOBossPhase CurrentPhase;
 };

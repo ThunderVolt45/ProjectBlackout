@@ -4,15 +4,15 @@
 #include "GameFramework/Pawn.h"
 
 void UBossBTRunner::Initialize(ABlackoutBossAIController* InController,
-                               const TMap<EBossPhase, TObjectPtr<UBehaviorTree>>& InTrees)
+                               const TMap<EBOBossPhase, TObjectPtr<UBehaviorTree>>& InTrees)
 {
 	OwnerController = InController;
 	PhaseBehaviorTrees = InTrees;
 }
 
-void UBossBTRunner::RunPhaseBT(EBossPhase NewPhase)
+void UBossBTRunner::RunPhaseBT(EBOBossPhase NewPhase)
 {
-	if (!OwnerController || NewPhase == EBossPhase::None) return;
+	if (!OwnerController || NewPhase == EBOBossPhase::None) return;
 
 	TObjectPtr<UBehaviorTree>* Tree = PhaseBehaviorTrees.Find(NewPhase);
 
@@ -36,5 +36,5 @@ void UBossBTRunner::StopBT()
 		Brain->StopLogic(TEXT("BTRunner::StopBT"));
 	}
 	
-	CurrentPhase = EBossPhase::None;
+	CurrentPhase = EBOBossPhase::None;
 }
