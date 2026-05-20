@@ -7,6 +7,7 @@
 
 enum class EBlackoutMatchEndReason : uint8;
 class ABlackoutPlayerCharacter;
+class ABlackoutPlayerController;
 
 /**
  * 전투 레벨 전용 GameMode. 전투 진입 자원 초기화 / 체크포인트 등록 / 파티 전멸 복귀 처리.
@@ -86,8 +87,20 @@ protected:
 	UPROPERTY(EditDefaultsOnly ,BlueprintReadOnly , Category = "Blackout|Battle|Demo")
 	bool bAutoStartOnFull = false;
 	
+public:
+	virtual void Logout(AController* Exiting) override;
+
+	/**
+	 * 사망한 SpectatorController의 현재 ViewTarget을 기준으로 살아있는 다음/이전 아군으로 전환합니다.
+	 * @param Direction -1=이전 / +1=다음.
+	 */
+	void CycleSpectateTargetForSpectator(ABlackoutPlayerController* SpectatorController, int32 Direction);
+
 private:
 	void EvaluatePartyWipe();
+	ABlackoutPlayerCharacter* FindInitialSpectateTarget(ABlackoutPlayerController* SpectatorController);
+	void AssignSpectateTargetForDeadPlayer(ABlackoutPlayerController* SpectatorController);
+	void RefreshSpectatorsForDeadTarget(ABlackoutPlayerCharacter* DeadTarget);
 
 	int32 NextPlayerClassIndex =0;
 

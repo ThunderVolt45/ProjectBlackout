@@ -215,6 +215,29 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Blackout|Interaction")
 	bool IsBeingRevived() const;
 
+	/** 다운 상태 진입 시 설정된 완전 사망 카운트다운 총 지속 시간(초)입니다. */
+	UFUNCTION(BlueprintPure, Category = "Blackout|State")
+	float GetDownedDeathDuration() const { return DownedDeathDuration; }
+
+	/**
+	 * 완전 사망까지 남은 시간(초)을 반환합니다.
+	 * 다운 상태가 아니면 0, 부활 시도 중이면 일시정지된 시점의 남은 시간을 그대로 반환합니다.
+	 */
+	UFUNCTION(BlueprintPure, Category = "Blackout|State")
+	float GetDownedDeathRemainingTime() const;
+
+	/** 현재 진행 중인 부활 시도의 총 지속 시간(초)입니다. 진행 중이 아니면 0. */
+	UFUNCTION(BlueprintPure, Category = "Blackout|State")
+	float GetReviveDuration() const { return ReviveDuration; }
+
+	/** 부활 완료까지 남은 시간(초)을 반환합니다. 다운/부활 시도 중이 아니면 0. */
+	UFUNCTION(BlueprintPure, Category = "Blackout|State")
+	float GetReviveRemainingTime() const;
+
+	/** 부활 진행률 0(시작)~1(완료)을 반환합니다. 서버 월드 시간 기반으로 클라이언트에서도 동일하게 계산됩니다. */
+	UFUNCTION(BlueprintPure, Category = "Blackout|State")
+	float GetReviveProgressNormalized() const;
+
 	UFUNCTION(BlueprintPure, Category = "Blackout|Interaction")
 	AActor* GetFocusedInteractableActor() const { return FocusedInteractableActor.Get(); }
 
@@ -223,7 +246,7 @@ public:
 
 	FBlackoutReviveInteractionStateChangedNativeSignature OnReviveInteractionStateChangedNative;
 
-	bool TryBeginReviveInteraction(ABlackoutPlayerCharacter* Reviver);
+	bool TryBeginReviveInteraction(ABlackoutPlayerCharacter* Reviver, float InReviveDuration = 0.0f);
 	void EndReviveInteraction(ABlackoutPlayerCharacter* Reviver);
 	bool TryInteractWithFocusedActor();
 	bool HasNearbyReviveTarget() const;
@@ -281,8 +304,9 @@ protected:
 	virtual void OnDeath() override;
 	virtual void HandleDownedStateChanged(bool bWasDowned, bool bIsDowned) override;
 	
+	/** 완전 사망 시 이 목록에서 유효한 몽타주 하나를 골라 재생합니다. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Blackout|Animation")
-	TObjectPtr<UAnimMontage> DeathMontage;
+	TArray<TObjectPtr<UAnimMontage>> DeathMontageVariants;
 
 	/** 다운 상태 진입 직후 1회 재생할 몽타주입니다. 비어 있으면 태그만 적용합니다. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Blackout|Animation")
@@ -338,8 +362,11 @@ protected:
 	void ApplyReplicatedReviveInteractionStateTag();
 	void StartDownedDeathTimer();
 	void ClearDownedDeathTimer();
+	void PauseDownedDeathTimer();
+	void ResumeDownedDeathTimer();
 	void HandleDownedDeathTimerExpired();
 	void NotifyBattleGameModePlayerFullyDead();
+	UAnimMontage* SelectDeathMontage() const;
 	
 	
 	
@@ -395,6 +422,9 @@ protected:
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "Blackout|Animation")
 	bool bIsReviveMontagePlaying = false;
 
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Blackout|Animation")
+	bool bIsDeathMontagePlaying = false;
+
 	/** 서버의 State.BeingRevived 태그를 클라이언트 로컬 ASC 태그로 옮기기 위한 복제 브리지입니다. */
 	UPROPERTY(Transient, ReplicatedUsing = OnRep_ReviveInteractionActive, BlueprintReadOnly, Category = "Blackout|Interaction")
 	bool bIsReviveInteractionActive = false;
@@ -423,8 +453,34 @@ protected:
 	FTimerHandle ReviveWeaponRestoreTimerHandle;
 	FTimerHandle DownedDeathTimerHandle;
 
+	/**
+	 * 다운 사망 타이머가 만료되는 서버 월드 시간(초)입니다.
+	 * 클라이언트는 GameStateBase::GetServerWorldTimeSeconds()와 비교해 남은 시간을 계산합니다.
+	 * 일시정지 중에는 0이며, 이때 남은 시간은 DownedDeathPausedRemainingTime에서 읽습니다.
+	 */
+	UPROPERTY(Transient, Replicated)
+	float DownedDeathServerEndTimeSeconds = 0.0f;
+
+	/** 부활 시도로 사망 타이머가 일시정지된 시점에 기록한 남은 시간(초)입니다. */
+	UPROPERTY(Transient, Replicated)
+	float DownedDeathPausedRemainingTime = 0.0f;
+
+	UPROPERTY(Transient, Replicated)
+	bool bDownedDeathTimerPaused = false;
+
+	/** 부활 시도가 시작된 서버 월드 시간(초)입니다. 시도 중이 아니면 0. */
+	UPROPERTY(Transient, Replicated)
+	float ReviveServerStartTimeSeconds = 0.0f;
+
+	/** 진행 중인 부활 시도의 총 지속 시간(초)입니다. 시도 중이 아니면 0. */
+	UPROPERTY(Transient, Replicated)
+	float ReviveDuration = 0.0f;
+
 	UFUNCTION()
 	void HandleHitReactMontageEnded(UAnimMontage* Montage, bool bInterrupted);
+
+	UFUNCTION()
+	void HandleDeathMontageEnded(UAnimMontage* Montage, bool bInterrupted);
 
 	UFUNCTION()
 	void OnRep_ReviveInteractionActive();

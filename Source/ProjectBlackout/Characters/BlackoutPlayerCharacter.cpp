@@ -12,6 +12,7 @@
 #include "AbilitySystemInterface.h"
 #include "GAS/Abilities/Player/BlackoutGA_Revive.h"
 #include "GameplayTags/BlackoutGameplayTags.h"
+#include "GameFramework/GameStateBase.h"
 #include "GameFramework/PlayerState.h"
 #include "Camera/CameraComponent.h"
 #include "Animation/AnimInstance.h"
@@ -78,6 +79,11 @@ void ABlackoutPlayerCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProper
 
 	DOREPLIFETIME_CONDITION(ABlackoutPlayerCharacter, ReplicatedAimOffset, COND_SkipOwner);
 	DOREPLIFETIME(ABlackoutPlayerCharacter, bIsReviveInteractionActive);
+	DOREPLIFETIME(ABlackoutPlayerCharacter, DownedDeathServerEndTimeSeconds);
+	DOREPLIFETIME(ABlackoutPlayerCharacter, DownedDeathPausedRemainingTime);
+	DOREPLIFETIME(ABlackoutPlayerCharacter, bDownedDeathTimerPaused);
+	DOREPLIFETIME(ABlackoutPlayerCharacter, ReviveServerStartTimeSeconds);
+	DOREPLIFETIME(ABlackoutPlayerCharacter, ReviveDuration);
 }
 
 void ABlackoutPlayerCharacter::Tick(float DeltaSeconds)
@@ -950,6 +956,15 @@ void ABlackoutPlayerCharacter::HandleHitReactMontageEnded(UAnimMontage* Montage,
 		*GetNameSafe(Montage));
 }
 
+void ABlackoutPlayerCharacter::HandleDeathMontageEnded(UAnimMontage* Montage, bool bInterrupted)
+{
+	bIsDeathMontagePlaying = false;
+	BO_LOG_GAS(Log,
+		"Death montage ended: Interrupted=%s Montage=%s",
+		bInterrupted ? TEXT("true") : TEXT("false"),
+		*GetNameSafe(Montage));
+}
+
 void ABlackoutPlayerCharacter::HandleWeaponSwapMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 {
 	bIsWeaponSwapMontagePlaying = false;
@@ -983,7 +998,7 @@ bool ABlackoutPlayerCharacter::IsBeingRevived() const
 		: bIsReviveInteractionActive;
 }
 
-bool ABlackoutPlayerCharacter::TryBeginReviveInteraction(ABlackoutPlayerCharacter* Reviver)
+bool ABlackoutPlayerCharacter::TryBeginReviveInteraction(ABlackoutPlayerCharacter* Reviver, float InReviveDuration)
 {
 	if (!HasAuthority() || !Reviver || IsDead() || !IsDowned())
 	{
@@ -1002,6 +1017,11 @@ bool ABlackoutPlayerCharacter::TryBeginReviveInteraction(ABlackoutPlayerCharacte
 			return ActiveReviver.Get() == Reviver;
 		}
 	}
+
+	// 부활 진행률을 다운된 본인 및 다른 클라이언트가 계산할 수 있도록 서버 시작 시각/총 지속 시간을 복제합니다.
+	const UWorld* World = GetWorld();
+	ReviveServerStartTimeSeconds = World ? World->GetTimeSeconds() : 0.0f;
+	ReviveDuration = FMath::Max(0.0f, InReviveDuration);
 
 	SetBeingRevivedStateActive(true);
 	Reviver->SetRevivingStateActive(true);
@@ -1029,6 +1049,11 @@ void ABlackoutPlayerCharacter::EndReviveInteraction(ABlackoutPlayerCharacter* Re
 
 	SetBeingRevivedStateActive(false);
 	ActiveReviver = nullptr;
+
+	// 부활 진행률 복제 필드를 초기화해 HUD가 즉시 부활 진행 표시를 종료하도록 합니다.
+	ReviveServerStartTimeSeconds = 0.0f;
+	ReviveDuration = 0.0f;
+
 	BroadcastReviveInteractionStateChanged();
 }
 
@@ -1089,6 +1114,7 @@ void ABlackoutPlayerCharacter::ApplyDownedStateLocally()
 	bIsDodgeMontagePlaying = false;
 	bIsWeaponSwapMontagePlaying = false;
 	bIsReviveMontagePlaying = false;
+	bIsDeathMontagePlaying = false;
 
 	if (UWorld* World = GetWorld())
 	{
@@ -1168,6 +1194,7 @@ void ABlackoutPlayerCharacter::OnDeath()
 	bIsDodgeMontagePlaying = false;
 	bIsWeaponSwapMontagePlaying = false;
 	bIsReviveMontagePlaying = false;
+	bIsDeathMontagePlaying = false;
 
 	if (CombatComponent)
 	{
@@ -1186,9 +1213,13 @@ void ABlackoutPlayerCharacter::OnDeath()
 		MoveComp->DisableMovement();
 	}
 
-	if (DeathMontage)
+	if (UAnimMontage* SelectedDeathMontage = SelectDeathMontage())
 	{
-		Multicast_PlayDeathMontage(DeathMontage, 1.f);
+		Multicast_PlayDeathMontage(SelectedDeathMontage, 1.f);
+	}
+	else
+	{
+		BO_LOG_GAS(Warning, "OnDeath: 재생할 사망 몽타주가 설정되지 않았습니다. Player=%s", *GetNameSafe(this));
 	}
 
 	NotifyBattleGameModePlayerFullyDead();
@@ -1230,6 +1261,7 @@ void ABlackoutPlayerCharacter::RestoreFromPartyWipeRestart()
 	bIsDodgeMontagePlaying = false;
 	bIsWeaponSwapMontagePlaying = false;
 	bIsReviveMontagePlaying = false;
+	bIsDeathMontagePlaying = false;
 
 	if (UWorld* World = GetWorld())
 	{
@@ -1281,6 +1313,26 @@ void ABlackoutPlayerCharacter::RestoreFromPartyWipeRestart()
 	BO_LOG_GAS(Log, "PartyWipeRestart 복구 완료: Player=%s", *GetNameSafe(this));
 }
 
+UAnimMontage* ABlackoutPlayerCharacter::SelectDeathMontage() const
+{
+	TArray<UAnimMontage*> ValidMontages;
+	for (const TObjectPtr<UAnimMontage>& Montage : DeathMontageVariants)
+	{
+		if (Montage.Get())
+		{
+			ValidMontages.Add(Montage.Get());
+		}
+	}
+
+	if (ValidMontages.Num() > 0)
+	{
+		const int32 SelectedIndex = FMath::RandRange(0, ValidMontages.Num() - 1);
+		return ValidMontages[SelectedIndex];
+	}
+
+	return nullptr;
+}
+
 bool ABlackoutPlayerCharacter::PlayDeathMontage(UAnimMontage* Montage, float PlayRate)
 {
 	if (!Montage)
@@ -1303,7 +1355,18 @@ bool ABlackoutPlayerCharacter::PlayDeathMontage(UAnimMontage* Montage, float Pla
 		return false;
 	}
 
+	AnimInstance->StopAllMontages(0.05f);
+
 	const float PlayResult = PlayAnimMontage(Montage, PlayRate);
+	if (PlayResult > 0.f)
+	{
+		bIsDeathMontagePlaying = true;
+
+		FOnMontageEnded MontageEndedDelegate;
+		MontageEndedDelegate.BindUObject(this, &ABlackoutPlayerCharacter::HandleDeathMontageEnded);
+		AnimInstance->Montage_SetEndDelegate(MontageEndedDelegate, Montage);
+	}
+
 	BO_LOG_GAS(Log,
 		"PlayDeathMontage result=%.2f Local=%s Authority=%s Montage=%s",
 		PlayResult,
@@ -1556,6 +1619,11 @@ void ABlackoutPlayerCharacter::StartDownedDeathTimer()
 		SafeDuration,
 		false);
 
+	// 클라이언트가 남은 시간을 계산할 수 있도록 서버 월드 시간 기준 만료 시각을 복제합니다.
+	DownedDeathServerEndTimeSeconds = World->GetTimeSeconds() + SafeDuration;
+	DownedDeathPausedRemainingTime = 0.0f;
+	bDownedDeathTimerPaused = false;
+
 	BO_LOG_GAS(Log, "다운 사망 타이머 시작: Player=%s Duration=%.1f", *GetNameSafe(this), SafeDuration);
 }
 
@@ -1565,6 +1633,132 @@ void ABlackoutPlayerCharacter::ClearDownedDeathTimer()
 	{
 		World->GetTimerManager().ClearTimer(DownedDeathTimerHandle);
 	}
+
+	// 복제 동기화 필드를 함께 초기화해 클라이언트 HUD가 잔여 시간을 0으로 인식하도록 합니다.
+	if (HasAuthority())
+	{
+		DownedDeathServerEndTimeSeconds = 0.0f;
+		DownedDeathPausedRemainingTime = 0.0f;
+		bDownedDeathTimerPaused = false;
+	}
+}
+
+void ABlackoutPlayerCharacter::PauseDownedDeathTimer()
+{
+	if (!HasAuthority())
+	{
+		return;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World || !DownedDeathTimerHandle.IsValid())
+	{
+		return;
+	}
+
+	// 부활 시도 중에는 완전 사망 카운트다운을 멈춰 남은 시간을 유지합니다.
+	const float RemainingAtPause = FMath::Max(0.0f, World->GetTimerManager().GetTimerRemaining(DownedDeathTimerHandle));
+	World->GetTimerManager().PauseTimer(DownedDeathTimerHandle);
+
+	DownedDeathPausedRemainingTime = RemainingAtPause;
+	DownedDeathServerEndTimeSeconds = 0.0f;
+	bDownedDeathTimerPaused = true;
+}
+
+void ABlackoutPlayerCharacter::ResumeDownedDeathTimer()
+{
+	if (!HasAuthority())
+	{
+		return;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World || !DownedDeathTimerHandle.IsValid() || !bDownedDeathTimerPaused)
+	{
+		return;
+	}
+
+	// 부활이 취소되면 정지 시점의 남은 시간으로 사망 타이머를 재개합니다.
+	World->GetTimerManager().UnPauseTimer(DownedDeathTimerHandle);
+
+	const float NewRemaining = FMath::Max(0.0f, World->GetTimerManager().GetTimerRemaining(DownedDeathTimerHandle));
+	DownedDeathServerEndTimeSeconds = World->GetTimeSeconds() + NewRemaining;
+	DownedDeathPausedRemainingTime = 0.0f;
+	bDownedDeathTimerPaused = false;
+}
+
+float ABlackoutPlayerCharacter::GetDownedDeathRemainingTime() const
+{
+	if (!IsDowned() || IsDead())
+	{
+		return 0.0f;
+	}
+
+	// 일시정지 중에는 복제된 정지 시점의 남은 시간을 그대로 사용합니다.
+	if (bDownedDeathTimerPaused)
+	{
+		return FMath::Max(0.0f, DownedDeathPausedRemainingTime);
+	}
+
+	if (DownedDeathServerEndTimeSeconds <= KINDA_SMALL_NUMBER)
+	{
+		return 0.0f;
+	}
+
+	const UWorld* World = GetWorld();
+	if (!World)
+	{
+		return 0.0f;
+	}
+
+	// 서버 월드 시간 기준으로 만료 시각과의 차이를 계산합니다.
+	// 클라이언트에서는 GameState의 서버 동기화 시간을 사용하고, 서버에서는 World->GetTimeSeconds()와 동일합니다.
+	float ServerNowSeconds = World->GetTimeSeconds();
+	if (const AGameStateBase* GameStateBase = World->GetGameState())
+	{
+		ServerNowSeconds = GameStateBase->GetServerWorldTimeSeconds();
+	}
+
+	return FMath::Max(0.0f, DownedDeathServerEndTimeSeconds - ServerNowSeconds);
+}
+
+float ABlackoutPlayerCharacter::GetReviveRemainingTime() const
+{
+	if (!IsDowned() || IsDead() || !IsBeingRevived())
+	{
+		return 0.0f;
+	}
+
+	if (ReviveDuration <= KINDA_SMALL_NUMBER)
+	{
+		return 0.0f;
+	}
+
+	const UWorld* World = GetWorld();
+	if (!World)
+	{
+		return 0.0f;
+	}
+
+	float ServerNowSeconds = World->GetTimeSeconds();
+	if (const AGameStateBase* GameStateBase = World->GetGameState())
+	{
+		ServerNowSeconds = GameStateBase->GetServerWorldTimeSeconds();
+	}
+
+	const float Elapsed = FMath::Max(0.0f, ServerNowSeconds - ReviveServerStartTimeSeconds);
+	return FMath::Clamp(ReviveDuration - Elapsed, 0.0f, ReviveDuration);
+}
+
+float ABlackoutPlayerCharacter::GetReviveProgressNormalized() const
+{
+	if (ReviveDuration <= KINDA_SMALL_NUMBER)
+	{
+		return 0.0f;
+	}
+
+	const float Remaining = GetReviveRemainingTime();
+	return FMath::Clamp(1.0f - (Remaining / ReviveDuration), 0.0f, 1.0f);
 }
 
 void ABlackoutPlayerCharacter::HandleDownedDeathTimerExpired()
@@ -1633,6 +1827,16 @@ void ABlackoutPlayerCharacter::SetBeingRevivedStateActive(bool bNewBeingRevived)
 	if (HasAuthority())
 	{
 		bIsReviveInteractionActive = bNewBeingRevived;
+
+		// 서버 권위 사망 타이머를 부활 시도 시작 시 일시정지, 취소 시 재개합니다.
+		if (bNewBeingRevived)
+		{
+			PauseDownedDeathTimer();
+		}
+		else
+		{
+			ResumeDownedDeathTimer();
+		}
 	}
 
 	if (!AbilitySystemComponent)

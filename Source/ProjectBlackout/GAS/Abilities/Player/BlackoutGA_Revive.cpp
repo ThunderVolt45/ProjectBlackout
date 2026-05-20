@@ -142,7 +142,7 @@ void UBlackoutGA_Revive::ActivateAbility(const FGameplayAbilitySpecHandle Handle
 		return;
 	}
 
-	if (CachedReviver->HasAuthority() && !CachedTarget->TryBeginReviveInteraction(CachedReviver.Get()))
+	if (CachedReviver->HasAuthority() && !CachedTarget->TryBeginReviveInteraction(CachedReviver.Get(), ReviveDuration))
 	{
 		BO_LOG_GAS(Warning, "GA_Revive failed: 다른 플레이어가 이미 같은 대상을 부활 중임");
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);

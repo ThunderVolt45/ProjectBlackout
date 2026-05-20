@@ -10,6 +10,7 @@ class UInputMappingContext;
 class UInputAction;
 class UBlackoutAbilitySystemComponent;
 class UBlackoutCombatComponent;
+class AActor;
 
 UCLASS()
 class PROJECTBLACKOUT_API ABlackoutPlayerController : public APlayerController
@@ -42,7 +43,24 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Blackout|Controller")
 	void EnterSpectatorMode();
-	
+
+	UFUNCTION(BlueprintCallable, Category = "Blackout|Controller")
+	void ExitSpectatorMode();
+
+	UFUNCTION(Client, Reliable, Category = "Blackout|Controller")
+	void Client_SetSpectateTarget(AActor* TargetActor, float BlendTime);
+
+	UFUNCTION(Client, Reliable, Category = "Blackout|Controller")
+	void Client_ReturnToOwnPawnView(float BlendTime);
+
+	/**
+	 * 사망한 관전 플레이어가 A/D 입력으로 관전 대상을 순환할 때 서버에 요청합니다.
+	 * 서버가 살아있는 아군 중 현재 대상의 이전/다음을 찾아 ViewTarget을 변경합니다.
+	 * @param Direction -1=이전, +1=다음.
+	 */
+	UFUNCTION(Server, Reliable, Category = "Blackout|Controller|Spectator")
+	void Server_CycleSpectateTarget(int32 Direction);
+
 #pragma region InputSetup
 protected:
 	virtual void OnPossess(APawn* InPawn) override;
@@ -54,6 +72,16 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Blackout|Input")
 	TObjectPtr<UInputMappingContext> MouseLookMappingContext;
+
+	/** 사망 후 관전 상태일 때만 활성화되는 입력 매핑 컨텍스트입니다. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Blackout|Input|Spectator")
+	TObjectPtr<UInputMappingContext> SpectatorMappingContext;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Blackout|Input|Spectator")
+	TObjectPtr<UInputAction> SpectatePrevAction;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Blackout|Input|Spectator")
+	TObjectPtr<UInputAction> SpectateNextAction;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Blackout|Input")
 	TObjectPtr<UInputAction> FireAction;
@@ -106,6 +134,11 @@ protected:
 	void OnUseConsumable2Released();
 	void OnUseRelicPressed();
 	void OnUseRelicReleased();
+	void OnSpectatePrevPressed();
+	void OnSpectateNextPressed();
+
+	/** 관전 진입/이탈 시 SpectatorMappingContext를 푸시/팝합니다. */
+	void SetSpectatorInputContextActive(bool bActive);
 	
 	bool IsHitReactInputBlocked() const;
 
