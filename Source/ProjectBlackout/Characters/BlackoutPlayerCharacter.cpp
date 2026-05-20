@@ -82,6 +82,8 @@ void ABlackoutPlayerCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProper
 	DOREPLIFETIME(ABlackoutPlayerCharacter, DownedDeathServerEndTimeSeconds);
 	DOREPLIFETIME(ABlackoutPlayerCharacter, DownedDeathPausedRemainingTime);
 	DOREPLIFETIME(ABlackoutPlayerCharacter, bDownedDeathTimerPaused);
+	DOREPLIFETIME(ABlackoutPlayerCharacter, ReviveServerStartTimeSeconds);
+	DOREPLIFETIME(ABlackoutPlayerCharacter, ReviveDuration);
 }
 
 void ABlackoutPlayerCharacter::Tick(float DeltaSeconds)
@@ -996,7 +998,7 @@ bool ABlackoutPlayerCharacter::IsBeingRevived() const
 		: bIsReviveInteractionActive;
 }
 
-bool ABlackoutPlayerCharacter::TryBeginReviveInteraction(ABlackoutPlayerCharacter* Reviver)
+bool ABlackoutPlayerCharacter::TryBeginReviveInteraction(ABlackoutPlayerCharacter* Reviver, float InReviveDuration)
 {
 	if (!HasAuthority() || !Reviver || IsDead() || !IsDowned())
 	{
@@ -1015,6 +1017,11 @@ bool ABlackoutPlayerCharacter::TryBeginReviveInteraction(ABlackoutPlayerCharacte
 			return ActiveReviver.Get() == Reviver;
 		}
 	}
+
+	// 부활 진행률을 다운된 본인 및 다른 클라이언트가 계산할 수 있도록 서버 시작 시각/총 지속 시간을 복제합니다.
+	const UWorld* World = GetWorld();
+	ReviveServerStartTimeSeconds = World ? World->GetTimeSeconds() : 0.0f;
+	ReviveDuration = FMath::Max(0.0f, InReviveDuration);
 
 	SetBeingRevivedStateActive(true);
 	Reviver->SetRevivingStateActive(true);
@@ -1042,6 +1049,11 @@ void ABlackoutPlayerCharacter::EndReviveInteraction(ABlackoutPlayerCharacter* Re
 
 	SetBeingRevivedStateActive(false);
 	ActiveReviver = nullptr;
+
+	// 부활 진행률 복제 필드를 초기화해 HUD가 즉시 부활 진행 표시를 종료하도록 합니다.
+	ReviveServerStartTimeSeconds = 0.0f;
+	ReviveDuration = 0.0f;
+
 	BroadcastReviveInteractionStateChanged();
 }
 
@@ -1708,6 +1720,45 @@ float ABlackoutPlayerCharacter::GetDownedDeathRemainingTime() const
 	}
 
 	return FMath::Max(0.0f, DownedDeathServerEndTimeSeconds - ServerNowSeconds);
+}
+
+float ABlackoutPlayerCharacter::GetReviveRemainingTime() const
+{
+	if (!IsDowned() || IsDead() || !IsBeingRevived())
+	{
+		return 0.0f;
+	}
+
+	if (ReviveDuration <= KINDA_SMALL_NUMBER)
+	{
+		return 0.0f;
+	}
+
+	const UWorld* World = GetWorld();
+	if (!World)
+	{
+		return 0.0f;
+	}
+
+	float ServerNowSeconds = World->GetTimeSeconds();
+	if (const AGameStateBase* GameStateBase = World->GetGameState())
+	{
+		ServerNowSeconds = GameStateBase->GetServerWorldTimeSeconds();
+	}
+
+	const float Elapsed = FMath::Max(0.0f, ServerNowSeconds - ReviveServerStartTimeSeconds);
+	return FMath::Clamp(ReviveDuration - Elapsed, 0.0f, ReviveDuration);
+}
+
+float ABlackoutPlayerCharacter::GetReviveProgressNormalized() const
+{
+	if (ReviveDuration <= KINDA_SMALL_NUMBER)
+	{
+		return 0.0f;
+	}
+
+	const float Remaining = GetReviveRemainingTime();
+	return FMath::Clamp(1.0f - (Remaining / ReviveDuration), 0.0f, 1.0f);
 }
 
 void ABlackoutPlayerCharacter::HandleDownedDeathTimerExpired()

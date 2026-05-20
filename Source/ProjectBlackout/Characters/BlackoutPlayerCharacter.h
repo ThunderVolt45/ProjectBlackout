@@ -226,6 +226,18 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Blackout|State")
 	float GetDownedDeathRemainingTime() const;
 
+	/** 현재 진행 중인 부활 시도의 총 지속 시간(초)입니다. 진행 중이 아니면 0. */
+	UFUNCTION(BlueprintPure, Category = "Blackout|State")
+	float GetReviveDuration() const { return ReviveDuration; }
+
+	/** 부활 완료까지 남은 시간(초)을 반환합니다. 다운/부활 시도 중이 아니면 0. */
+	UFUNCTION(BlueprintPure, Category = "Blackout|State")
+	float GetReviveRemainingTime() const;
+
+	/** 부활 진행률 0(시작)~1(완료)을 반환합니다. 서버 월드 시간 기반으로 클라이언트에서도 동일하게 계산됩니다. */
+	UFUNCTION(BlueprintPure, Category = "Blackout|State")
+	float GetReviveProgressNormalized() const;
+
 	UFUNCTION(BlueprintPure, Category = "Blackout|Interaction")
 	AActor* GetFocusedInteractableActor() const { return FocusedInteractableActor.Get(); }
 
@@ -234,7 +246,7 @@ public:
 
 	FBlackoutReviveInteractionStateChangedNativeSignature OnReviveInteractionStateChangedNative;
 
-	bool TryBeginReviveInteraction(ABlackoutPlayerCharacter* Reviver);
+	bool TryBeginReviveInteraction(ABlackoutPlayerCharacter* Reviver, float InReviveDuration = 0.0f);
 	void EndReviveInteraction(ABlackoutPlayerCharacter* Reviver);
 	bool TryInteractWithFocusedActor();
 	bool HasNearbyReviveTarget() const;
@@ -455,6 +467,14 @@ protected:
 
 	UPROPERTY(Transient, Replicated)
 	bool bDownedDeathTimerPaused = false;
+
+	/** 부활 시도가 시작된 서버 월드 시간(초)입니다. 시도 중이 아니면 0. */
+	UPROPERTY(Transient, Replicated)
+	float ReviveServerStartTimeSeconds = 0.0f;
+
+	/** 진행 중인 부활 시도의 총 지속 시간(초)입니다. 시도 중이 아니면 0. */
+	UPROPERTY(Transient, Replicated)
+	float ReviveDuration = 0.0f;
 
 	UFUNCTION()
 	void HandleHitReactMontageEnded(UAnimMontage* Montage, bool bInterrupted);

@@ -54,8 +54,23 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Blackout|HUD|Downed|Text")
 	FText SpectatorStatusText;
 
+	/** 사망 타이머 프로그래스 바 색상입니다. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Blackout|HUD|Downed|Color")
+	FLinearColor DeathTimerBarColor = FLinearColor(0.85f, 0.15f, 0.15f, 1.0f);
+
+	/** 부활 진행 프로그래스 바 색상입니다. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Blackout|HUD|Downed|Color")
+	FLinearColor ReviveTimerBarColor = FLinearColor(0.2f, 0.85f, 0.35f, 1.0f);
+
+	/** 관전 상태 등 기본/폴백 색상입니다. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Blackout|HUD|Downed|Color")
+	FLinearColor DefaultBarColor = FLinearColor::White;
+
 	/** 현재 HUDData.HUDMode에 해당하는 표시 문구를 반환합니다. 컨트롤러가 채운 StatusText가 비어 있을 때만 사용합니다. */
 	FText ResolveStatusTextForMode(EBlackoutHUDMode HUDMode) const;
+
+	/** 현재 HUDData.HUDMode에 해당하는 프로그래스 바 색상을 반환합니다. */
+	FLinearColor ResolveBarColorForMode(EBlackoutHUDMode HUDMode) const;
 
 	UFUNCTION(BlueprintImplementableEvent, meta = (DisplayName = "On Downed State HUD Data Changed"), Category = "Blackout|HUD|Downed")
 	void ReceiveDownedStateHUDDataChanged(const FBlackoutDownedStateHUDData& InHUDData);

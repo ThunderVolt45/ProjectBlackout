@@ -825,14 +825,14 @@ FBlackoutDownedStateHUDData UBlackoutHUDWidgetController::BuildDownedStateHUDDat
 			break;
 		}
 
-		// 다운된 본인 클라이언트에서는 부활 어빌리티 진행률을 직접 알 수 없으므로
-		// 부활 시도 중임을 알리는 시각적 단서만 표시하고 정확한 진행률 복제는 후속 작업으로 둡니다.
-		HUDData.TotalDuration = FMath::Max(KINDA_SMALL_NUMBER, LocalPlayerCharacter->GetDownedDeathDuration());
-		HUDData.RemainingTime = FMath::Clamp(
-			LocalPlayerCharacter->GetDownedDeathRemainingTime(),
-			0.0f,
-			HUDData.TotalDuration);
-		HUDData.ProgressNormalized = 0.0f;
+		const float ReviveTotal = FMath::Max(KINDA_SMALL_NUMBER, LocalPlayerCharacter->GetReviveDuration());
+		const float ReviveRemaining = FMath::Clamp(LocalPlayerCharacter->GetReviveRemainingTime(), 0.0f, ReviveTotal);
+
+		HUDData.TotalDuration = ReviveTotal;
+		HUDData.RemainingTime = ReviveRemaining;
+		// 위젯이 SetPercent 시 (1 - ProgressNormalized)를 적용하므로,
+		// 부활 진행 바가 0→1로 차오르도록 보조 값(= 남은 비율)을 전달합니다.
+		HUDData.ProgressNormalized = FMath::Clamp(ReviveRemaining / ReviveTotal, 0.0f, 1.0f);
 		HUDData.bIsVisible = true;
 		break;
 	}

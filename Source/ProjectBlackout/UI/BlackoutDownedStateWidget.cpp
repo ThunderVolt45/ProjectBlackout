@@ -25,6 +25,7 @@ void UBlackoutDownedStateWidget::SetDownedStateHUDData(const FBlackoutDownedStat
 	if (ProgressBar)
 	{
 		ProgressBar->SetPercent(FMath::Clamp(1 - HUDData.ProgressNormalized, 0.0f, 1.0f));
+		ProgressBar->SetFillColorAndOpacity(ResolveBarColorForMode(HUDData.HUDMode));
 		ProgressBar->SetVisibility(HUDData.bIsVisible ? VisibleState : HiddenState);
 	}
 
@@ -56,6 +57,21 @@ FText UBlackoutDownedStateWidget::ResolveStatusTextForMode(EBlackoutHUDMode HUDM
 	case EBlackoutHUDMode::Combat:
 	default:
 		return FText::GetEmpty();
+	}
+}
+
+FLinearColor UBlackoutDownedStateWidget::ResolveBarColorForMode(EBlackoutHUDMode HUDMode) const
+{
+	switch (HUDMode)
+	{
+	case EBlackoutHUDMode::DownedDeathTimer:
+		return DeathTimerBarColor;
+	case EBlackoutHUDMode::DownedReviveTimer:
+		return ReviveTimerBarColor;
+	case EBlackoutHUDMode::Spectator:
+	case EBlackoutHUDMode::Combat:
+	default:
+		return DefaultBarColor;
 	}
 }
 
