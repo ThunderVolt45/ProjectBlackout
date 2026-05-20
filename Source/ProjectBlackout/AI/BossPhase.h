@@ -1,7 +1,7 @@
 ﻿#pragma once
 
 #include "CoreMinimal.h"
-#include "EBossPhase.generated.h"
+#include "BossPhase.generated.h"
 
 UENUM(BlueprintType)
 enum class EBossPhase : uint8
