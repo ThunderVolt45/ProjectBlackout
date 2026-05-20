@@ -23,6 +23,7 @@
 #include "UI/BlackoutPartyRosterWidgetController.h"
 #include "UI/BlackoutRelicWidget.h"
 #include "UI/BlackoutReviveProgressWidget.h"
+#include "UI/BlackoutSpectatorWidget.h"
 #include "UI/BlackoutValueBarWidget.h"
 #include "UI/BlackoutWeaponAmmoWidget.h"
 
@@ -89,6 +90,14 @@ void UBlackoutHUDWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTi
 	if (DownedStateWidget && DownedStateHUDData.HUDMode != EBlackoutHUDMode::Combat)
 	{
 		DownedStateWidget->SetDownedStateHUDData(DownedStateHUDData);
+	}
+
+	// 관전 모드에서는 ViewTarget이 사망/부활/관전 순환 등으로 자주 바뀌므로 닉네임을 매 틱 갱신합니다.
+	if (SpectatorWidget && WidgetController && WidgetController->GetCurrentHUDMode() == EBlackoutHUDMode::Spectator)
+	{
+		FText SpectatorTargetName;
+		WidgetController->GetSpectatorTargetName(SpectatorTargetName);
+		SpectatorWidget->SetSpectatorTargetName(SpectatorTargetName);
 	}
 }
 
@@ -749,6 +758,7 @@ void UBlackoutHUDWidget::ApplyHUDMode(EBlackoutHUDMode InHUDMode)
 	const bool bShowDownedWidget =
 		InHUDMode == EBlackoutHUDMode::DownedDeathTimer ||
 		InHUDMode == EBlackoutHUDMode::DownedReviveTimer;
+	const bool bShowSpectatorWidget = InHUDMode == EBlackoutHUDMode::Spectator;
 
 	if (BasicCombatHUDLayer)
 	{
@@ -760,6 +770,13 @@ void UBlackoutHUDWidget::ApplyHUDMode(EBlackoutHUDMode InHUDMode)
 	if (DownedStateWidget)
 	{
 		DownedStateWidget->SetVisibility(bShowDownedWidget
+			? ESlateVisibility::HitTestInvisible
+			: ESlateVisibility::Hidden);
+	}
+
+	if (SpectatorWidget)
+	{
+		SpectatorWidget->SetVisibility(bShowSpectatorWidget
 			? ESlateVisibility::HitTestInvisible
 			: ESlateVisibility::Hidden);
 	}

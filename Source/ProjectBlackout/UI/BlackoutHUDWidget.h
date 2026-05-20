@@ -19,6 +19,7 @@ class UBlackoutPartyRosterWidget;
 class UBlackoutPartyRosterWidgetController;
 class UBlackoutRelicWidget;
 class UBlackoutReviveProgressWidget;
+class UBlackoutSpectatorWidget;
 class UBlackoutValueBarWidget;
 class UBlackoutWeaponAmmoWidget;
 class UCanvasPanel;
@@ -93,6 +94,9 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "Blackout|HUD|Downed")
 	TObjectPtr<UBlackoutDownedStateWidget> DownedStateWidget;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "Blackout|HUD|Spectator")
+	TObjectPtr<UBlackoutSpectatorWidget> SpectatorWidget;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "Blackout|HUD")
 	TObjectPtr<UWidget> ImpactIndicatorWidget;

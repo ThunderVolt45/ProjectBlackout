@@ -746,6 +746,38 @@ bool UBlackoutHUDWidgetController::GetDownedStateHUDData(FBlackoutDownedStateHUD
 	return OutHUDData.bIsVisible;
 }
 
+bool UBlackoutHUDWidgetController::GetSpectatorTargetName(FText& OutTargetName) const
+{
+	OutTargetName = FText::GetEmpty();
+
+	if (CurrentHUDMode != EBlackoutHUDMode::Spectator)
+	{
+		return false;
+	}
+
+	const ABlackoutPlayerController* BlackoutPlayerController = PlayerController.Get();
+	if (!BlackoutPlayerController)
+	{
+		return false;
+	}
+
+	// ViewTarget의 PlayerState 닉네임을 가져옵니다. 본인 시점이거나 PS가 없으면 표시할 이름이 없습니다.
+	const AActor* CurrentViewTarget = BlackoutPlayerController->GetViewTarget();
+	const APawn* ViewTargetPawn = Cast<APawn>(CurrentViewTarget);
+	if (!ViewTargetPawn || ViewTargetPawn == BlackoutPlayerController->GetPawn())
+	{
+		return false;
+	}
+
+	if (const APlayerState* TargetPlayerState = ViewTargetPawn->GetPlayerState())
+	{
+		OutTargetName = FText::FromString(TargetPlayerState->GetPlayerName());
+		return !OutTargetName.IsEmpty();
+	}
+
+	return false;
+}
+
 void UBlackoutHUDWidgetController::HandleDownedRelatedTagChanged(const FGameplayTag CallbackTag, int32 NewCount)
 {
 	// 태그 콜백은 NewCount만 알려주므로 현재 ASC 태그 컨테이너 전체를 다시 평가합니다.

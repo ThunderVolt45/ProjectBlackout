@@ -106,6 +106,21 @@ void ABlackoutBattleGameMode::OnPlayerLeft(AController* Exiting)
 	}
 }
 
+void ABlackoutBattleGameMode::Logout(AController* Exiting)
+{
+	// Super::Logout 호출 시 PlayerArray에서 PS가 제거되고 폰이 정리될 수 있으므로,
+	// 이탈자를 ViewTarget으로 보고 있는 관전자들을 먼저 재지정합니다.
+	if (const APlayerController* ExitingController = Cast<APlayerController>(Exiting))
+	{
+		if (ABlackoutPlayerCharacter* ExitingCharacter = Cast<ABlackoutPlayerCharacter>(ExitingController->GetPawn()))
+		{
+			RefreshSpectatorsForDeadTarget(ExitingCharacter);
+		}
+	}
+
+	Super::Logout(Exiting);
+}
+
 // 전원 Ready 시 InCombat 전환 + 보스 활성화 훅. 실제 보스 활성 로직은 전투팀 합류 시 연결.
 void ABlackoutBattleGameMode::OnAllPlayersReady()
 {
@@ -391,7 +406,18 @@ void ABlackoutBattleGameMode::AssignSpectateTargetForDeadPlayer(ABlackoutPlayerC
 	ABlackoutPlayerCharacter* SpectateTarget = FindInitialSpectateTarget(SpectatorController);
 	if (!SpectateTarget)
 	{
-		BO_LOG_NET(Log, "관전 대상 없음: Controller=%s", *GetNameSafe(SpectatorController));
+		// 살아있는 아군이 없으면 자기 시신을 ViewTarget으로 두어 0,0,0 카메라 점프를 막습니다.
+		if (APawn* OwnPawn = SpectatorController->GetPawn())
+		{
+			SpectatorController->EnterSpectatorMode();
+			SpectatorController->SetViewTargetWithBlend(OwnPawn, 0.35f);
+			SpectatorController->Client_SetSpectateTarget(OwnPawn, 0.35f);
+			BO_LOG_NET(Log, "관전 대상 폴백(자기 시신): Controller=%s", *GetNameSafe(SpectatorController));
+		}
+		else
+		{
+			BO_LOG_NET(Warning, "관전 대상 폴백 실패: Pawn이 비어 있음 Controller=%s", *GetNameSafe(SpectatorController));
+		}
 		return;
 	}
 
@@ -404,6 +430,79 @@ void ABlackoutBattleGameMode::AssignSpectateTargetForDeadPlayer(ABlackoutPlayerC
 		*GetNameSafe(SpectatorController),
 		*GetNameSafe(SpectateTarget),
 		SpectateTarget->IsDowned() ? TEXT("true") : TEXT("false"));
+}
+
+void ABlackoutBattleGameMode::CycleSpectateTargetForSpectator(ABlackoutPlayerController* SpectatorController, int32 Direction)
+{
+	if (!SpectatorController || !GameState)
+	{
+		return;
+	}
+
+	const ABlackoutPlayerCharacter* SpectatorPawn = Cast<ABlackoutPlayerCharacter>(SpectatorController->GetPawn());
+	if (!SpectatorPawn || !SpectatorPawn->IsDead())
+	{
+		BO_LOG_NET(Verbose, "관전 대상 순환 무시: 사망 상태가 아닙니다. Controller=%s", *GetNameSafe(SpectatorController));
+		return;
+	}
+
+	// 후보 = 살아있는 다른 플레이어 캐릭터. 다운 상태도 후보에 포함합니다(설계 기준 살아있는 아군).
+	TArray<ABlackoutPlayerCharacter*> Candidates;
+	Candidates.Reserve(GameState->PlayerArray.Num());
+	for (APlayerState* PlayerStateBase : GameState->PlayerArray)
+	{
+		const ABlackoutPlayerState* BlackoutPlayerState = Cast<ABlackoutPlayerState>(PlayerStateBase);
+		if (!BlackoutPlayerState)
+		{
+			continue;
+		}
+
+		APlayerController* CandidateController = BlackoutPlayerState->GetPlayerController();
+		ABlackoutPlayerCharacter* Candidate = CandidateController
+			? Cast<ABlackoutPlayerCharacter>(CandidateController->GetPawn())
+			: nullptr;
+		if (!Candidate || Candidate == SpectatorPawn || Candidate->IsDead())
+		{
+			continue;
+		}
+
+		Candidates.Add(Candidate);
+	}
+
+	if (Candidates.Num() == 0)
+	{
+		// 후보가 없으면 자기 시신으로 폴백해 카메라가 월드 원점으로 튀지 않게 합니다.
+		if (APawn* OwnPawn = SpectatorController->GetPawn())
+		{
+			SpectatorController->EnterSpectatorMode();
+			SpectatorController->SetViewTargetWithBlend(OwnPawn, 0.25f);
+			SpectatorController->Client_SetSpectateTarget(OwnPawn, 0.25f);
+		}
+		BO_LOG_NET(Log, "관전 대상 순환 실패(폴백 적용): 살아있는 아군이 없음 Controller=%s", *GetNameSafe(SpectatorController));
+		return;
+	}
+
+	const AActor* CurrentViewTarget = SpectatorController->GetViewTarget();
+	const int32 CurrentIndex = Candidates.IndexOfByPredicate([CurrentViewTarget](const ABlackoutPlayerCharacter* C)
+	{
+		return C == CurrentViewTarget;
+	});
+
+	const int32 Step = (Direction >= 0) ? 1 : -1;
+	const int32 NextIndex = (CurrentIndex == INDEX_NONE)
+		? 0
+		: ((CurrentIndex + Step + Candidates.Num()) % Candidates.Num());
+
+	ABlackoutPlayerCharacter* NextTarget = Candidates[NextIndex];
+	SpectatorController->EnterSpectatorMode();
+	SpectatorController->SetViewTargetWithBlend(NextTarget, 0.25f);
+	SpectatorController->Client_SetSpectateTarget(NextTarget, 0.25f);
+
+	BO_LOG_NET(Log,
+		"관전 대상 순환: Spectator=%s Direction=%d Target=%s",
+		*GetNameSafe(SpectatorController),
+		Direction,
+		*GetNameSafe(NextTarget));
 }
 
 void ABlackoutBattleGameMode::RefreshSpectatorsForDeadTarget(ABlackoutPlayerCharacter* DeadTarget)

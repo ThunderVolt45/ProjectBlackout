@@ -1,5 +1,6 @@
 #include "BlackoutPlayerController.h"
 
+#include "BlackoutBattleGameMode.h"
 #include "BlackoutGameMode.h"
 #include "BlackoutAbilitySystemComponent.h"
 #include "BlackoutPlayerState.h"
@@ -70,13 +71,16 @@ void ABlackoutPlayerController::Server_SetReady_Implementation(bool bNewReady)
 
 void ABlackoutPlayerController::EnterSpectatorMode()
 {
-	ChangeState(NAME_Spectating);
+	// ChangeState(NAME_Spectating)을 호출하면 엔진이 기본 SpectatorPawn으로 Possess를 옮겨
+	// 사망한 캐릭터 참조와 입력 컨텍스트가 어긋납니다. 본 프로젝트는 사망 캐릭터를 그대로 보유하면서
+	// ViewTarget만 옮기는 방식이므로 상태 전환은 호출하지 않습니다.
+	SetSpectatorInputContextActive(true);
 	BO_LOG_CORE(Log, "EnterSpectatorMode: %s", *GetName());
 }
 
 void ABlackoutPlayerController::ExitSpectatorMode()
 {
-	ChangeState(NAME_Playing);
+	SetSpectatorInputContextActive(false);
 
 	if (APawn* ControlledPawn = GetPawn())
 	{
@@ -84,6 +88,56 @@ void ABlackoutPlayerController::ExitSpectatorMode()
 	}
 
 	BO_LOG_CORE(Log, "ExitSpectatorMode: %s", *GetName());
+}
+
+void ABlackoutPlayerController::SetSpectatorInputContextActive(bool bActive)
+{
+	if (!IsLocalPlayerController() || !SpectatorMappingContext)
+	{
+		return;
+	}
+
+	ULocalPlayer* LocalPlayer = GetLocalPlayer();
+	if (!LocalPlayer)
+	{
+		return;
+	}
+
+	UEnhancedInputLocalPlayerSubsystem* InputSubsystem =
+		ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(LocalPlayer);
+	if (!InputSubsystem)
+	{
+		return;
+	}
+
+	if (bActive)
+	{
+		// 기본 IMC보다 우선순위를 높여(1) A/D 키 매핑이 MoveAction을 가리지 않도록 합니다.
+		InputSubsystem->AddMappingContext(SpectatorMappingContext, 1);
+	}
+	else
+	{
+		InputSubsystem->RemoveMappingContext(SpectatorMappingContext);
+	}
+}
+
+void ABlackoutPlayerController::OnSpectatePrevPressed()
+{
+	Server_CycleSpectateTarget(-1);
+}
+
+void ABlackoutPlayerController::OnSpectateNextPressed()
+{
+	Server_CycleSpectateTarget(+1);
+}
+
+void ABlackoutPlayerController::Server_CycleSpectateTarget_Implementation(int32 Direction)
+{
+	if (ABlackoutBattleGameMode* BattleGameMode =
+		GetWorld() ? GetWorld()->GetAuthGameMode<ABlackoutBattleGameMode>() : nullptr)
+	{
+		BattleGameMode->CycleSpectateTargetForSpectator(this, Direction);
+	}
 }
 
 void ABlackoutPlayerController::Client_SetSpectateTarget_Implementation(AActor* TargetActor, float BlendTime)
@@ -104,7 +158,8 @@ void ABlackoutPlayerController::Client_SetSpectateTarget_Implementation(AActor* 
 
 void ABlackoutPlayerController::Client_ReturnToOwnPawnView_Implementation(float BlendTime)
 {
-	ChangeState(NAME_Playing);
+	// EnterSpectatorMode와 마찬가지로 상태 전환은 사용하지 않습니다. ViewTarget만 본인 폰으로 복귀합니다.
+	SetSpectatorInputContextActive(false);
 
 	if (APawn* ControlledPawn = GetPawn())
 	{
@@ -250,7 +305,16 @@ void ABlackoutPlayerController::SetupInputComponent()
 		EnhancedInputComponent->BindAction(UseRelicAction, ETriggerEvent::Completed, this, &ABlackoutPlayerController::OnUseRelicReleased);
 		EnhancedInputComponent->BindAction(UseRelicAction, ETriggerEvent::Canceled, this, &ABlackoutPlayerController::OnUseRelicReleased);
 	}
-	
+
+	if (SpectatePrevAction)
+	{
+		EnhancedInputComponent->BindAction(SpectatePrevAction, ETriggerEvent::Started, this, &ABlackoutPlayerController::OnSpectatePrevPressed);
+	}
+
+	if (SpectateNextAction)
+	{
+		EnhancedInputComponent->BindAction(SpectateNextAction, ETriggerEvent::Started, this, &ABlackoutPlayerController::OnSpectateNextPressed);
+	}
 }
 
 void ABlackoutPlayerController::OnFirePressed()

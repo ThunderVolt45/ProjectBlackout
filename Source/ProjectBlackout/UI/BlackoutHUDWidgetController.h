@@ -66,6 +66,13 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Blackout|HUD|Downed")
 	bool GetDownedStateHUDData(FBlackoutDownedStateHUDData& OutHUDData) const;
 
+	/**
+	 * 관전 상태일 때 현재 ViewTarget의 닉네임을 채워 반환합니다.
+	 * 관전 상태가 아니거나 대상이 없으면 false를 반환하고 OutTargetName은 비어 있습니다.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Blackout|HUD|Spectator")
+	bool GetSpectatorTargetName(FText& OutTargetName) const;
+
 	bool GetRevivePromptData(FBlackoutInteractionPromptData& OutPromptData) const
 	{
 		return GetInteractionPromptData(OutPromptData);
