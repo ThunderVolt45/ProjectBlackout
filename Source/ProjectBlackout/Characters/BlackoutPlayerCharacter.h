@@ -495,15 +495,15 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Blackout|Camera")
 	float AimCameraInterpSpeed = 12.f;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Blackout|Movement")
-	float DefaultMaxWalkSpeed = 600.f;
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Blackout|Movement")
+	float DefaultMaxWalkSpeed;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Blackout|Movement")
-	float AimMaxWalkSpeed = 420.f;
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Blackout|Movement")
+	float AimMaxWalkSpeed;
 
 	/** 다운 상태에서 기어다닐 때 사용할 이동 속도입니다. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Blackout|Movement")
-	float DownedMaxWalkSpeed = 150.f;
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Blackout|Movement")
+	float DownedMaxWalkSpeed;
 
 
 	virtual void Tick(float DeltaSeconds) override;

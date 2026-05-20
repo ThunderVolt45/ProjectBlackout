@@ -57,6 +57,11 @@ ABlackoutPlayerCharacter::ABlackoutPlayerCharacter(const FObjectInitializer& Obj
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 	GetCharacterMovement()->bUseControllerDesiredRotation = false;
 	GetCharacterMovement()->RotationRate = FRotator(0.f, 720.f, 0.f);
+
+	// 기본 이동 속도 초기화 (Transient 변수의 안전장치용 기본값 설정)
+	DefaultMaxWalkSpeed = 600.f;
+	AimMaxWalkSpeed = 420.f;
+	DownedMaxWalkSpeed = 150.f;
 }
 
 void ABlackoutPlayerCharacter::BeginPlay()
@@ -1803,6 +1808,14 @@ void ABlackoutPlayerCharacter::InitializeAttributes()
 
 		AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
 		BO_LOG_GAS(Log, "Attributes initialized for %s using GE", *GetName());
+
+		// UBOCharacterData에 설정된 이동 속도 데이터를 로컬 Transient 변수에 동적으로 로드합니다.
+		DefaultMaxWalkSpeed = CharacterData->BaseMovementSpeed;
+		AimMaxWalkSpeed = CharacterData->AimMovementSpeed;
+		DownedMaxWalkSpeed = CharacterData->DownedMovementSpeed;
+
+		// 조준 및 다운 상태를 확인하고 올바른 이동 속도로 즉시 업데이트합니다.
+		UpdateAimMovementMode();
 	}
 }
 
