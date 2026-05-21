@@ -1213,6 +1213,12 @@ void ABlackoutPlayerCharacter::OnDeath()
 		MoveComp->DisableMovement();
 	}
 
+	if (UCapsuleComponent* CapsuleComp = GetCapsuleComponent())
+	{
+		// 사망 시 다른 캐릭터(Pawn)와 부딪히지 않고 통과하여 지나갈 수 있도록 충돌을 무시합니다.
+		CapsuleComp->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
+	}
+
 	if (UAnimMontage* SelectedDeathMontage = SelectDeathMontage())
 	{
 		Multicast_PlayDeathMontage(SelectedDeathMontage, 1.f);
@@ -1307,6 +1313,12 @@ void ABlackoutPlayerCharacter::RestoreFromPartyWipeRestart()
 		MoveComp->MaxWalkSpeed = DefaultMaxWalkSpeed;
 		MoveComp->bOrientRotationToMovement = true;
 		MoveComp->bUseControllerDesiredRotation = false;
+	}
+
+	if (UCapsuleComponent* CapsuleComp = GetCapsuleComponent())
+	{
+		// 부활하여 복구될 때 캡슐의 Pawn 충돌 반응을 원래 상태(블록)로 원상복구합니다.
+		CapsuleComp->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
 	}
 
 	UpdateAimMovementMode();
