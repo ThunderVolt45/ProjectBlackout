@@ -23,6 +23,7 @@
 #include "GameplayCueManager.h"
 #include "BlackoutLog.h"
 #include "EnhancedInputComponent.h"
+#include "Components/CapsuleComponent.h"
 #include "Engine/OverlapResult.h"
 #include "GAS/Attributes/BlackoutBaseAttributeSet.h"
 #include "Net/UnrealNetwork.h"
@@ -1213,6 +1214,13 @@ void ABlackoutPlayerCharacter::OnDeath()
 		MoveComp->DisableMovement();
 	}
 
+	if (UCapsuleComponent* CapsuleComp = GetCapsuleComponent())
+	{
+		// 사망 시 다른 캐릭터(Pawn)와 부딪히지 않고 통과하여 지나갈 수 있도록 충돌을 무시합니다.
+		CapsuleComp->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
+		CapsuleComp->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
+	}
+
 	if (UAnimMontage* SelectedDeathMontage = SelectDeathMontage())
 	{
 		Multicast_PlayDeathMontage(SelectedDeathMontage, 1.f);
@@ -1309,6 +1317,13 @@ void ABlackoutPlayerCharacter::RestoreFromPartyWipeRestart()
 		MoveComp->bUseControllerDesiredRotation = false;
 	}
 
+	if (UCapsuleComponent* CapsuleComp = GetCapsuleComponent())
+	{
+		// 부활하여 복구될 때 캡슐의 Pawn 충돌 반응을 원래 상태(블록)로 원상복구합니다.
+		CapsuleComp->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
+		CapsuleComp->SetCollisionResponseToChannel(ECC_Camera, ECR_Block);
+	}
+
 	UpdateAimMovementMode();
 	BO_LOG_GAS(Log, "PartyWipeRestart 복구 완료: Player=%s", *GetNameSafe(this));
 }
@@ -1353,6 +1368,13 @@ bool ABlackoutPlayerCharacter::PlayDeathMontage(UAnimMontage* Montage, float Pla
 	{
 		BO_LOG_GAS(Warning, "PlayDeathMontage failed: AnimInstance가 비어 있음");
 		return false;
+	}
+
+	// 클라이언트에서 사망 몽타주를 시작하는 즉시 로컬 캡슐 충돌 반응을 무시로 설정하여 레이턴시 오차를 보완합니다.
+	if (UCapsuleComponent* CapsuleComp = GetCapsuleComponent())
+	{
+		CapsuleComp->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
+		CapsuleComp->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
 	}
 
 	AnimInstance->StopAllMontages(0.05f);
