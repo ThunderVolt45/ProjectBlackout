@@ -32,11 +32,12 @@ sequenceDiagram
     Server-->>Attacker: Client_ShowDamageNumber (데미지 텍스트)
 
     alt Target HP <= 0
-        Server->>Server: 사망 상태 확정 후 ExecCalc_CombatReward 판정
+        Server->>TargetASC: 치명 피해 확정 후 OnDeath 전 GE_CombatReward 적용
+        TargetASC->>Server: BP ExecCalc_CombatReward 판정
         Note over Server: Kill.Melee / Kill.MultiTarget.Count3 / Kill.WeakSpot
 
         Server->>Server: 주무기 탄약 / 보조무기 탄약 / 소모품 중 1개 랜덤 선택
-        Server->>Pool: SpawnFromPool(ABlackoutDropItem, 미니언 사망 위치)
+        Server->>Pool: SpawnFromPool(ABlackoutDropItem, 일반 적 사망 위치)
         Pool-->>Server: 드롭 아이템 월드 스폰
         Note over Attacker,Pool: 플레이어가 [E] 상호작용 시 실제 탄약/소모품 지급
 

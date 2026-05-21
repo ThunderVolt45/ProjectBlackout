@@ -153,6 +153,15 @@ void ABlackoutPlayerCharacter::PossessedBy(AController* NewController)
 			{
 				if (ABlackoutPlayerState* BlackoutPlayerState = GetPlayerState<ABlackoutPlayerState>())
 				{
+					if (!BlackoutPlayerState->SelectedClassTag.IsValid() && CharacterData->ClassTag.IsValid())
+					{
+						// 로비 선택을 거치지 않는 테스트 맵에서는 BP의 CharacterData를 병과 태그 기본값으로 사용합니다.
+						BlackoutPlayerState->SelectedClassTag = CharacterData->ClassTag;
+						BO_LOG_GAS(Log, "SelectedClassTag initialized from CharacterData: Player=%s Class=%s",
+							*GetNameSafe(this),
+							*BlackoutPlayerState->SelectedClassTag.ToString());
+					}
+
 					BlackoutPlayerState->InitializeConsumablesFromCharacterData(CharacterData);
 				}
 
