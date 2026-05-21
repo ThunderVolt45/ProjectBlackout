@@ -12,6 +12,9 @@
 #include "GameFramework/Pawn.h"
 #include "Engine/World.h"
 #include "TimerManager.h"
+#include "Characters/BlackoutPlayerCharacter.h"
+#include "Combat/Components/BlackoutCombatComponent.h"
+#include "Combat/Weapons/BOFirearm.h"
 
 ABlackoutDropItem::ABlackoutDropItem()
 {
@@ -140,16 +143,34 @@ void ABlackoutDropItem::OnInteract_Implementation(AActor* Interactor)
 		UAbilitySystemComponent* ASC = PlayerState->GetAbilitySystemComponent();
 		if (ASC)
 		{
-			const float MaxClip = ASC->GetNumericAttribute(UBlackoutAmmoAttributeSet::GetPrimaryMaxClipAttribute());
 			const float CurrentReserve = ASC->GetNumericAttribute(UBlackoutAmmoAttributeSet::GetPrimaryReserveAmmoAttribute());
+			
+			float MaxReserve = 0.0f;
+			if (ABlackoutPlayerCharacter* PC = Cast<ABlackoutPlayerCharacter>(Interactor))
+			{
+				if (const UBlackoutCombatComponent* CombatComp = PC->GetCombatComponent())
+				{
+					if (const ABOFirearm* Primary = CombatComp->GetPrimaryFirearm())
+					{
+						MaxReserve = static_cast<float>(Primary->GetMaxReserveAmmo());
+					}
+				}
+			}
 
-			// 주무기 충전량 연산: 최대 탄창 * 비율 (최대 탄창 값이 유효하지 않으면 30발 고정 보충)
-			const float ChargeAmount = MaxClip > 0.0f ? FMath::CeilToFloat(MaxClip * PrimaryAmmoChargeRatio) : 30.0f;
+			// 안전장치(Fallback): 무기 인스턴스를 찾지 못했다면 기존 한 탄창 값 기준으로 연산
+			if (MaxReserve <= 0.0f)
+			{
+				const float MaxClip = ASC->GetNumericAttribute(UBlackoutAmmoAttributeSet::GetPrimaryMaxClipAttribute());
+				MaxReserve = MaxClip > 0.0f ? MaxClip * 5.0f : 150.0f;
+			}
+
+			// 최대 예비 탄약량 * 비율
+			const float ChargeAmount = FMath::CeilToFloat(MaxReserve * PrimaryAmmoChargeRatio);
 
 			ASC->SetNumericAttributeBase(UBlackoutAmmoAttributeSet::GetPrimaryReserveAmmoAttribute(), CurrentReserve + ChargeAmount);
 
-			BO_LOG_CORE(Log, TEXT("주무기 탄약 충전 완료: Player=%s, +%f (%f -> %f)"),
-				*PlayerState->GetPlayerName(), ChargeAmount, CurrentReserve, CurrentReserve + ChargeAmount);
+			BO_LOG_CORE(Log, TEXT("주무기 탄약 충전 완료: Player=%s, +%f (MaxReserve=%f, %f -> %f)"),
+				*PlayerState->GetPlayerName(), ChargeAmount, MaxReserve, CurrentReserve, CurrentReserve + ChargeAmount);
 		}
 	}
 	else if (DropItemType == EBlackoutDropItemType::SecondaryAmmo)
@@ -157,16 +178,34 @@ void ABlackoutDropItem::OnInteract_Implementation(AActor* Interactor)
 		UAbilitySystemComponent* ASC = PlayerState->GetAbilitySystemComponent();
 		if (ASC)
 		{
-			const float MaxClip = ASC->GetNumericAttribute(UBlackoutAmmoAttributeSet::GetSecondaryMaxClipAttribute());
 			const float CurrentReserve = ASC->GetNumericAttribute(UBlackoutAmmoAttributeSet::GetSecondaryReserveAmmoAttribute());
 
-			// 보조무기 충전량 연산: 최대 탄창 * 비율 (최대 탄창 값이 유효하지 않으면 15발 고정 보충)
-			const float ChargeAmount = MaxClip > 0.0f ? FMath::CeilToFloat(MaxClip * SecondaryAmmoChargeRatio) : 15.0f;
+			float MaxReserve = 0.0f;
+			if (ABlackoutPlayerCharacter* PC = Cast<ABlackoutPlayerCharacter>(Interactor))
+			{
+				if (const UBlackoutCombatComponent* CombatComp = PC->GetCombatComponent())
+				{
+					if (const ABOFirearm* Secondary = CombatComp->GetSecondaryFirearm())
+					{
+						MaxReserve = static_cast<float>(Secondary->GetMaxReserveAmmo());
+					}
+				}
+			}
+
+			// 안전장치(Fallback)
+			if (MaxReserve <= 0.0f)
+			{
+				const float MaxClip = ASC->GetNumericAttribute(UBlackoutAmmoAttributeSet::GetSecondaryMaxClipAttribute());
+				MaxReserve = MaxClip > 0.0f ? MaxClip * 5.0f : 75.0f;
+			}
+
+			// 최대 예비 탄약량 * 비율
+			const float ChargeAmount = FMath::CeilToFloat(MaxReserve * SecondaryAmmoChargeRatio);
 
 			ASC->SetNumericAttributeBase(UBlackoutAmmoAttributeSet::GetSecondaryReserveAmmoAttribute(), CurrentReserve + ChargeAmount);
 
-			BO_LOG_CORE(Log, TEXT("보조무기 탄약 충전 완료: Player=%s, +%f (%f -> %f)"),
-				*PlayerState->GetPlayerName(), ChargeAmount, CurrentReserve, CurrentReserve + ChargeAmount);
+			BO_LOG_CORE(Log, TEXT("보조무기 탄약 충전 완료: Player=%s, +%f (MaxReserve=%f, %f -> %f)"),
+				*PlayerState->GetPlayerName(), ChargeAmount, MaxReserve, CurrentReserve, CurrentReserve + ChargeAmount);
 		}
 	}
 	else if (DropItemType == EBlackoutDropItemType::Consumable)
@@ -359,4 +398,24 @@ bool ABlackoutDropItem::TryResolvePlayerState(AActor* Interactor, ABlackoutPlaye
 	const APawn* InteractorPawn = Cast<APawn>(Interactor);
 	OutPlayerState = InteractorPawn ? InteractorPawn->GetPlayerState<ABlackoutPlayerState>() : nullptr;
 	return OutPlayerState != nullptr;
+}
+
+void ABlackoutDropItem::SetActorHiddenInGame(bool bNewHidden)
+{
+	Super::SetActorHiddenInGame(bNewHidden);
+
+	if (InteractionWidget)
+	{
+		InteractionWidget->SetHiddenInGame(bNewHidden);
+	}
+}
+
+void ABlackoutDropItem::PostNetReceive()
+{
+	Super::PostNetReceive();
+
+	if (InteractionWidget)
+	{
+		InteractionWidget->SetHiddenInGame(IsHidden());
+	}
 }

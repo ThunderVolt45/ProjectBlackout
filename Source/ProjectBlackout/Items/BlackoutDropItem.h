@@ -44,6 +44,10 @@ public:
 	virtual void OnSpawnFromPool_Implementation() override;
 	virtual void OnReturnToPool_Implementation() override;
 
+	// AActor 가상 함수 오버라이드 (가시성 제어 자동 동기화)
+	virtual void SetActorHiddenInGame(bool bNewHidden) override;
+	virtual void PostNetReceive() override;
+
 	// 드롭 아이템 타입 설정
 	UFUNCTION(BlueprintCallable, Category = "Blackout|DropItem")
 	void SetDropItemType(EBlackoutDropItemType NewType);
