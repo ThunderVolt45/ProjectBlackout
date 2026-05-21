@@ -174,7 +174,7 @@ GE와 ExecCalc(실행 계산기)를 사용해, 피격 처리와 기믹 보상을
     | **주무기 탄약 박스** | 40% | 획득자 `PrimaryReserveAmmo` 충전 |
     | **보조무기 탄약 박스** | 40% | 획득자 `SecondaryReserveAmmo` 충전 |
     | **소모품 박스** | 20% | 블러드 루트 OR 굴 혈청 중 50:50 무작위 지급 |
-  - 드롭 액터는 일반 적 사망 위치에 약간의 scatter offset을 더해 `UBlackoutPoolSubsystem::SpawnFromPool`로 서버에서 스폰합니다.
+  - 드롭 액터는 일반 적 사망 위치 주변에 scatter 후보점을 만든 뒤, `ECC_WorldStatic` 아래 방향 트레이스로 바닥 ImpactPoint를 찾아 `UBlackoutPoolSubsystem::SpawnFromPool`로 서버에서 스폰합니다. 스폰 직후 `ABlackoutDropItem::SnapToGround`가 `PickupMesh` bounds 최하단을 기준으로 최종 Z 위치를 보정합니다.
 
 ### 5.1 플레이어 다운(Downed) 및 관전(Spectator) 모드 제어
 멀티플레이 협동을 위한 다단계 데스 생명 주기를 ASC와 Controller 상태를 통해 구현합니다.
@@ -359,7 +359,7 @@ GDD §8.3의 미니멀리즘 HUD 전체 구성 요소를 UI 위젯 레이어로 
   - `OnReturnToPool()`: Destroy 대신 호출. Hidden 처리, Collision 해제, Timer/Delegate 정리, 필요 시 AI Controller 정지
 - **생명 주기 요약**
   - **발사체**: SpawnFromPool → 충돌 판정 → 임팩트 GC 재생 → OnReturnToPool
-  - **드랍 아이템**: 조건부 킬 시 SpawnFromPool → 일반 적 사망 위치에 바닥 드랍 → `[E]` 상호작용 획득 또는 수명 만료 → OnReturnToPool
+  - **드랍 아이템**: 조건부 킬 시 SpawnFromPool → 바닥 트레이스 및 PickupMesh bounds 기준 위치 보정 → `[E]` 상호작용 획득 또는 수명 만료 → OnReturnToPool
   - **미니언**: SpawnFromPool(위치/HP 리셋, BT 재실행) → HP 0 시 래그돌 N초 → OnReturnToPool
 
 ## 13. 애니메이션 및 로코모션 제어

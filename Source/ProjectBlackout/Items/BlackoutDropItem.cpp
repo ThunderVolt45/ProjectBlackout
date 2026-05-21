@@ -270,6 +270,50 @@ void ABlackoutDropItem::SetDropItemType(EBlackoutDropItemType NewType)
 	DropItemType = NewType;
 }
 
+void ABlackoutDropItem::SnapToGround(AActor* IgnoreActor)
+{
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	const FVector CurrentLocation = GetActorLocation();
+	const FVector TraceStart = CurrentLocation + FVector(0.0f, 0.0f, FMath::Max(GroundSnapTraceUpDistance, 0.0f));
+	const FVector TraceEnd = CurrentLocation - FVector(0.0f, 0.0f, FMath::Max(GroundSnapTraceDownDistance, 0.0f));
+
+	FHitResult GroundHit;
+	FCollisionQueryParams QueryParams(SCENE_QUERY_STAT(BlackoutDropItemSnapToGround), false, this);
+	QueryParams.AddIgnoredActor(this);
+	if (IgnoreActor)
+	{
+		QueryParams.AddIgnoredActor(IgnoreActor);
+	}
+
+	if (!World->LineTraceSingleByChannel(GroundHit, TraceStart, TraceEnd, ECC_WorldStatic, QueryParams)
+		|| !GroundHit.bBlockingHit)
+	{
+		BO_LOG_CORE(Verbose, TEXT("ABlackoutDropItem::SnapToGround: 바닥 탐색 실패. Drop=%s Location=%s"),
+			*GetNameSafe(this),
+			*CurrentLocation.ToString());
+		return;
+	}
+
+	float MeshBottomOffsetFromActor = 0.0f;
+	if (PickupMesh && PickupMesh->IsRegistered())
+	{
+		const FBoxSphereBounds MeshBounds = PickupMesh->Bounds;
+		if (MeshBounds.BoxExtent.Z > KINDA_SMALL_NUMBER)
+		{
+			MeshBottomOffsetFromActor = (MeshBounds.Origin.Z - MeshBounds.BoxExtent.Z) - CurrentLocation.Z;
+		}
+	}
+
+	FVector SnappedLocation = CurrentLocation;
+	SnappedLocation.Z = GroundHit.ImpactPoint.Z + GroundSnapClearance - MeshBottomOffsetFromActor;
+	SetActorLocation(SnappedLocation, false, nullptr, ETeleportType::TeleportPhysics);
+}
+
 void ABlackoutDropItem::OnLifeTimeExpired()
 {
 	if (!HasAuthority())

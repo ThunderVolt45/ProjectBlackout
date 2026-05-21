@@ -16,6 +16,41 @@
 #include "GameplayEffect.h"
 #include "Engine/World.h"
 
+namespace
+{
+	FVector ResolveGroundedDropLocation(
+		UWorld* World,
+		AActor* TargetAvatar,
+		const FVector& CandidateLocation,
+		float TraceUpDistance,
+		float TraceDownDistance,
+		float GroundOffset)
+	{
+		if (!World)
+		{
+			return CandidateLocation + FVector(0.0f, 0.0f, GroundOffset);
+		}
+
+		const FVector TraceStart = CandidateLocation + FVector(0.0f, 0.0f, FMath::Max(TraceUpDistance, 0.0f));
+		const FVector TraceEnd = CandidateLocation - FVector(0.0f, 0.0f, FMath::Max(TraceDownDistance, 0.0f));
+
+		FHitResult GroundHit;
+		FCollisionQueryParams QueryParams(SCENE_QUERY_STAT(CombatRewardDropGroundTrace), false, TargetAvatar);
+		QueryParams.AddIgnoredActor(TargetAvatar);
+
+		if (World->LineTraceSingleByChannel(GroundHit, TraceStart, TraceEnd, ECC_WorldStatic, QueryParams)
+			&& GroundHit.bBlockingHit)
+		{
+			return GroundHit.ImpactPoint + FVector(0.0f, 0.0f, GroundOffset);
+		}
+
+		BO_LOG_CORE(Verbose, TEXT("UExecCalc_CombatReward: 드롭 바닥 탐색 실패. Target=%s Candidate=%s"),
+			*GetNameSafe(TargetAvatar),
+			*CandidateLocation.ToString());
+		return CandidateLocation + FVector(0.0f, 0.0f, GroundOffset);
+	}
+}
+
 UExecCalc_CombatReward::UExecCalc_CombatReward()
 {
 	// 기본 드롭 아이템 블루프린트 클래스는 에디터에서 오버라이드할 수 있도록 nullptr로 두되,
@@ -30,7 +65,15 @@ void UExecCalc_CombatReward::Execute_Implementation(
 	(void)OutExecutionOutput;
 	UAbilitySystemComponent* SourceASC = ExecutionParams.GetSourceAbilitySystemComponent();
 	UAbilitySystemComponent* TargetASC = ExecutionParams.GetTargetAbilitySystemComponent();
-	TrySpawnRewardDropInternal(ExecutionParams.GetOwningSpec(), SourceASC, TargetASC, DropItemClass);
+	TrySpawnRewardDropInternal(
+		ExecutionParams.GetOwningSpec(),
+		SourceASC,
+		TargetASC,
+		DropItemClass,
+		DropScatterRadius,
+		DropGroundTraceUpDistance,
+		DropGroundTraceDownDistance,
+		DropGroundOffset);
 }
 
 bool UExecCalc_CombatReward::ApplyConfiguredRewardEffect(
@@ -119,7 +162,11 @@ bool UExecCalc_CombatReward::TrySpawnRewardDropInternal(
 	const FGameplayEffectSpec& RewardSpec,
 	UAbilitySystemComponent* SourceASC,
 	UAbilitySystemComponent* TargetASC,
-	TSubclassOf<ABlackoutDropItem> InDropItemClass)
+	TSubclassOf<ABlackoutDropItem> InDropItemClass,
+	float InDropScatterRadius,
+	float InDropGroundTraceUpDistance,
+	float InDropGroundTraceDownDistance,
+	float InDropGroundOffset)
 {
 	if (!SourceASC || !TargetASC)
 	{
@@ -276,10 +323,19 @@ bool UExecCalc_CombatReward::TrySpawnRewardDropInternal(
 			SelectedType = EBlackoutDropItemType::Consumable;
 		}
 
-		// 사망한 몬스터 위치에서 약간의 불규칙한 미세 오차(Scatter)를 적용하여 생성 (자연스러운 스폰감)
-		const FVector ScatterOffset(FMath::RandRange(-60.f, 60.f), FMath::RandRange(-60.f, 60.f), 15.f);
-		const FVector SpawnLocation = TargetAvatar->GetActorLocation() + ScatterOffset;
-		const FTransform SpawnTransform(TargetAvatar->GetActorRotation(), SpawnLocation);
+		// 사망한 몬스터 위치 주변에서 후보점을 정한 뒤, 아래 방향 트레이스로 실제 바닥 위치에 맞춰 생성합니다.
+		const float ScatterRadius = FMath::Max(InDropScatterRadius, 0.0f);
+		const FVector ScatterOffset(FMath::RandRange(-ScatterRadius, ScatterRadius), FMath::RandRange(-ScatterRadius, ScatterRadius), 0.0f);
+		const FVector CandidateLocation = TargetAvatar->GetActorLocation() + ScatterOffset;
+		const FVector SpawnLocation = ResolveGroundedDropLocation(
+			World,
+			TargetAvatar,
+			CandidateLocation,
+			InDropGroundTraceUpDistance,
+			InDropGroundTraceDownDistance,
+			InDropGroundOffset);
+		const FRotator SpawnRotation(0.0f, TargetAvatar->GetActorRotation().Yaw, 0.0f);
+		const FTransform SpawnTransform(SpawnRotation, SpawnLocation);
 
 		AActor* SpawnedActor = PoolSubsystem->SpawnFromPool(SpawnClass, SpawnTransform);
 		ABlackoutDropItem* DropItem = Cast<ABlackoutDropItem>(SpawnedActor);
@@ -287,12 +343,13 @@ bool UExecCalc_CombatReward::TrySpawnRewardDropInternal(
 		{
 			// 드롭 상태 타입 초기화
 			DropItem->SetDropItemType(SelectedType);
+			DropItem->SnapToGround(TargetAvatar);
 
 			BO_LOG_CORE(Log, TEXT("처치 보상 드롭 성공: Player=%s, Class=%s, DroppedType=%d, Location=%s"),
 				*SourcePS->GetPlayerName(),
 				*ClassTag.ToString(),
 				(int32)SelectedType,
-				*SpawnLocation.ToString());
+				*DropItem->GetActorLocation().ToString());
 			return true;
 		}
 		else

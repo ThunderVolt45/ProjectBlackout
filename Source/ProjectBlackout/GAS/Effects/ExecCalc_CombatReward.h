@@ -32,10 +32,30 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Blackout|Reward")
 	TSubclassOf<class ABlackoutDropItem> DropItemClass;
 
+	/** 사망 위치 주변 드롭 산포 반경입니다. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Blackout|Reward|Placement", meta = (ClampMin = "0.0"))
+	float DropScatterRadius = 60.0f;
+
+	/** 바닥 탐색 라인트레이스 시작점의 상단 거리입니다. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Blackout|Reward|Placement", meta = (ClampMin = "0.0"))
+	float DropGroundTraceUpDistance = 300.0f;
+
+	/** 바닥 탐색 라인트레이스 하단 거리입니다. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Blackout|Reward|Placement", meta = (ClampMin = "0.0"))
+	float DropGroundTraceDownDistance = 1500.0f;
+
+	/** 바닥 ImpactPoint에서 드롭 아이템을 살짝 띄울 높이입니다. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Blackout|Reward|Placement", meta = (ClampMin = "0.0"))
+	float DropGroundOffset = 5.0f;
+
 private:
 	static bool TrySpawnRewardDropInternal(
 		const FGameplayEffectSpec& RewardSpec,
 		UAbilitySystemComponent* SourceASC,
 		UAbilitySystemComponent* TargetASC,
-		TSubclassOf<class ABlackoutDropItem> InDropItemClass);
+		TSubclassOf<class ABlackoutDropItem> InDropItemClass,
+		float InDropScatterRadius,
+		float InDropGroundTraceUpDistance,
+		float InDropGroundTraceDownDistance,
+		float InDropGroundOffset);
 };

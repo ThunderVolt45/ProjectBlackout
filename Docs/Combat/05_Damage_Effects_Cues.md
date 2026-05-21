@@ -58,7 +58,7 @@ classDiagram
   - `GE_CombatReward`는 Instant GE이며, Execution에 BP 서브클래스 `ExecCalc_CombatReward`를 지정합니다. 드롭 아이템 액터 클래스는 캐릭터 BP가 아니라 이 BP ExecCalc의 `DropItemClass` 기본값에서 지정합니다.
   - Source PlayerState의 `SelectedClassTag` + 마지막 타격 Spec의 킬 태그 조합을 검증합니다.
   - 로비 선택을 거치지 않는 테스트 맵에서는 Source 플레이어 캐릭터의 `CharacterData.ClassTag`를 병과 태그 폴백으로 사용합니다.
-  - 조건 만족 시 즉시 자원을 지급하지 않고, 일반 적(`ABlackoutEnemyCharacter`, 보스 제외) 사망 위치에 `ABlackoutDropItem` 1개를 `UBlackoutPoolSubsystem::SpawnFromPool`로 스폰합니다.
+  - 조건 만족 시 즉시 자원을 지급하지 않고, 일반 적(`ABlackoutEnemyCharacter`, 보스 제외) 사망 위치 주변 후보점을 바닥 트레이스로 보정해 `ABlackoutDropItem` 1개를 `UBlackoutPoolSubsystem::SpawnFromPool`로 스폰합니다. 이후 드롭 액터가 `PickupMesh` bounds 기준으로 한 번 더 바닥 스냅합니다.
   - 드롭 후보는 주무기 탄약 40% / 보조무기 탄약 40% / 소모품 20% 중 하나이며, 실제 탄약·소모품 지급은 플레이어가 `[E]` 상호작용으로 획득할 때 처리합니다.
   - 클래스 A: `Kill.Melee`, 클래스 B: `Kill.MultiTarget.Count3`, 클래스 C: `Kill.WeakSpot`.
   - 실행 시점은 `ExecCalc_DamageCalc`와 같은 GE 실행 순서에 의존하지 않고, 서버에서 데미지 적용 후 치명 피해가 확정된 직후이자 `OnDeath()` 사이드 이펙트 실행 전의 사망 처리 경로에서 `GE_CombatReward`를 적용합니다. 다중 처치는 산탄·폭발·스플래시 판정 소유자가 배치 내 처치 수를 집계한 뒤 `Kill.MultiTarget.Count3`가 포함된 보상 Spec으로 후처리합니다.

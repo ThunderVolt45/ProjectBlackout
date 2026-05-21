@@ -37,7 +37,9 @@ sequenceDiagram
         Note over Server: Kill.Melee / Kill.MultiTarget.Count3 / Kill.WeakSpot
 
         Server->>Server: 주무기 탄약 / 보조무기 탄약 / 소모품 중 1개 랜덤 선택
-        Server->>Pool: SpawnFromPool(ABlackoutDropItem, 일반 적 사망 위치)
+        Server->>Server: 일반 적 사망 위치 주변 후보점 → 바닥 트레이스 보정
+        Server->>Pool: SpawnFromPool(ABlackoutDropItem, 바닥 보정 위치)
+        Server->>Server: PickupMesh bounds 기준 최종 바닥 스냅
         Pool-->>Server: 드롭 아이템 월드 스폰
         Note over Attacker,Pool: 플레이어가 [E] 상호작용 시 실제 탄약/소모품 지급
 

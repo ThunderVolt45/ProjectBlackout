@@ -51,6 +51,10 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Blackout|DropItem")
 	EBlackoutDropItemType GetDropItemType() const { return DropItemType; }
 
+	/** 현재 위치 아래의 바닥을 찾아 PickupMesh 하단이 바닥에 맞도록 위치를 보정합니다. */
+	UFUNCTION(BlueprintCallable, Category = "Blackout|DropItem")
+	void SnapToGround(AActor* IgnoreActor = nullptr);
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -89,6 +93,18 @@ protected:
 	// 바닥 잔존 수명 (초)
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Blackout|DropItem|LifeTime", meta = (ClampMin = 1.0f))
 	float LifeTime = 30.0f;
+
+	// 바닥 스냅 라인트레이스 시작점의 상단 거리
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Blackout|DropItem|Placement", meta = (ClampMin = 0.0f))
+	float GroundSnapTraceUpDistance = 120.0f;
+
+	// 바닥 스냅 라인트레이스 하단 거리
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Blackout|DropItem|Placement", meta = (ClampMin = 0.0f))
+	float GroundSnapTraceDownDistance = 500.0f;
+
+	// PickupMesh 하단과 바닥 사이에 남길 여유 높이
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Blackout|DropItem|Placement", meta = (ClampMin = 0.0f))
+	float GroundSnapClearance = 1.0f;
 
 	// 동일 프레임 중복 획득을 방지하는 서버용 획득 여부 플래그
 	UPROPERTY(Transient)
