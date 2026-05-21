@@ -146,6 +146,7 @@ namespace BlackoutGameplayTags
 	
 	// ─── Ravager Abilities ──────────────────────────────────────────────────────
 	UE_DEFINE_GAMEPLAY_TAG(Ability_PhaseLock, "Ability.PhaseLock");
+	UE_DEFINE_GAMEPLAY_TAG(Ability_TargetChange, "Ability.TargetChange");
 	
 	UE_DEFINE_GAMEPLAY_TAG(Ability_Ravager_Bite_Single, "Ability.Ravager.Bite.Single");
 	
@@ -218,5 +219,8 @@ namespace BlackoutGameplayTags
 	UE_DEFINE_GAMEPLAY_TAG(Event_Montage_ReloadWeaponStart, "Event.Montage.Reload.WeaponStart");
 	UE_DEFINE_GAMEPLAY_TAG(Event_Montage_ReloadAmmoCommit, "Event.Montage.Reload.AmmoCommit");
 	UE_DEFINE_GAMEPLAY_TAG(Event_Montage_WeaponSwapCommit, "Event.Montage.WeaponSwap.Commit");
-	
+
+	// ─── Shelter ──────────────────────────────────────────────────────────
+	UE_DEFINE_GAMEPLAY_TAG(State_InShelter,        "State.InShelter");
+	UE_DEFINE_GAMEPLAY_TAG(Effect_ShelterScoped,   "Effect.ShelterScoped");
 }

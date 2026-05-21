@@ -150,6 +150,8 @@ namespace BlackoutGameplayTags
 	// ─── Ravager Abilities ─────────────────────────────────────────────────────────
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_PhaseLock);
 	
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_TargetChange);
+	
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Ravager_Bite_Single);
 	
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Ravager_FromSingle_SwipeL);
@@ -220,4 +222,8 @@ namespace BlackoutGameplayTags
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Event_Montage_ReloadWeaponStart);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Event_Montage_ReloadAmmoCommit);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Event_Montage_WeaponSwapCommit);
+
+	// ─── Shelter ──────────────────────────────────────────────────────────
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_InShelter);          // 쉘터존 안에 있는 동안 부여
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Effect_ShelterScoped);     // 쉘터 내 적용된 GE 표식 (이탈 시 strip)
 }
