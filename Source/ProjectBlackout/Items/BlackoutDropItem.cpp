@@ -1,6 +1,7 @@
 #include "Items/BlackoutDropItem.h"
 
 #include "Components/SphereComponent.h"
+#include "Net/UnrealNetwork.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/WidgetComponent.h"
 #include "Core/BlackoutLog.h"
@@ -15,6 +16,8 @@
 #include "Characters/BlackoutPlayerCharacter.h"
 #include "Combat/Components/BlackoutCombatComponent.h"
 #include "Combat/Weapons/BOFirearm.h"
+#include "NiagaraComponent.h"
+#include "NiagaraSystem.h"
 
 ABlackoutDropItem::ABlackoutDropItem()
 {
@@ -43,11 +46,19 @@ ABlackoutDropItem::ABlackoutDropItem()
 	InteractionWidget->SetupAttachment(InteractionSphere);
 	InteractionWidget->SetWidgetSpace(EWidgetSpace::Screen); // 화면 공간 2D 투영 방식
 	InteractionWidget->SetDrawAtDesiredSize(true);
+
+	// 이펙트 출력을 위한 나이아가라 컴포넌트 직접 탑재 및 기본 비활성화 처리
+	RewardEffectComponent = CreateDefaultSubobject<UNiagaraComponent>(TEXT("RewardEffectComponent"));
+	RewardEffectComponent->SetupAttachment(InteractionSphere);
+	RewardEffectComponent->bAutoActivate = false;
 }
 
 void ABlackoutDropItem::BeginPlay()
 {
 	Super::BeginPlay();
+
+	// 생성/BeginPlay 시점에 비주얼 상태 동기화
+	UpdateRewardVisual();
 }
 
 bool ABlackoutDropItem::CanInteract_Implementation(AActor* Interactor) const
@@ -71,8 +82,6 @@ bool ABlackoutDropItem::CanInteract_Implementation(AActor* Interactor) const
 		// 주무기 탄약 충전이 필요한 상황인지 검사
 		if (ASC)
 		{
-			// 예비 탄약이 최대 클립 등 기획적 가이드에 따른 추가 확장을 감안하여, 일단 항상 획득할 수 있도록 하되
-			// 필요 시 현재 예비탄 카운트를 검사하여 한도 내에서만 획득하게 조절 가능합니다.
 			return true;
 		}
 	}
@@ -133,9 +142,13 @@ void ABlackoutDropItem::OnInteract_Implementation(AActor* Interactor)
 	// 획득 시작 (중복 획득 차단)
 	bIsCollected = true;
 
-	// 비주얼 및 물리 차단
+	// 비주얼 및 물리 차단 (즉각 반응성 보장)
 	InteractionSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	SetActorHiddenInGame(true);
+	UpdateRewardVisual();
+
+	// 클라이언트로의 즉각 복제를 즉시 강제 (Relevancy가 끊기기 전 도달 보장)
+	ForceNetUpdate();
 
 	// 지급 처리
 	if (DropItemType == EBlackoutDropItemType::PrimaryAmmo)
@@ -250,14 +263,24 @@ void ABlackoutDropItem::OnInteract_Implementation(AActor* Interactor)
 	}
 
 	// 획득이 완전히 종료되었으므로 파괴하지 않고 풀링 서브시스템으로 반환하여 재사용
-	UWorld* World = GetWorld();
-	if (World)
+	// 단, 클라이언트가 획득/가시성 복제 패킷을 충분히 수신할 시간을 확보하기 위해 0.05초간 미세 지연 후 반환합니다.
+	if (UWorld* World = GetWorld())
 	{
-		UBlackoutPoolSubsystem* PoolSubsystem = World->GetSubsystem<UBlackoutPoolSubsystem>();
-		if (PoolSubsystem)
-		{
-			PoolSubsystem->ReturnToPool(this);
-		}
+		World->GetTimerManager().SetTimer(
+			ReturnToPoolTimerHandle,
+			FTimerDelegate::CreateWeakLambda(this, [this]()
+			{
+				if (UWorld* LocalWorld = GetWorld())
+				{
+					if (UBlackoutPoolSubsystem* PoolSubsystem = LocalWorld->GetSubsystem<UBlackoutPoolSubsystem>())
+					{
+						PoolSubsystem->ReturnToPool(this);
+					}
+				}
+			}),
+			0.05f,
+			false
+		);
 	}
 }
 
@@ -278,6 +301,15 @@ void ABlackoutDropItem::OnSpawnFromPool_Implementation()
 	}
 	SetActorHiddenInGame(false);
 
+	if (InteractionWidget)
+	{
+		InteractionWidget->SetHiddenInGame(false);
+		InteractionWidget->SetVisibility(true, true);
+	}
+
+	// 나이아가라 컴포넌트 가시성 동기화
+	UpdateRewardVisual();
+
 	// 바닥에서 영구 방치되어 자원이 낭비되는 것을 차단하기 위해 30초 수명 타이머 시동 (서버 전용)
 	if (HasAuthority() && LifeTime > 0.0f)
 	{
@@ -295,6 +327,7 @@ void ABlackoutDropItem::OnReturnToPool_Implementation()
 {
 	// 타이머 해제
 	GetWorldTimerManager().ClearTimer(LifeTimeTimerHandle);
+	GetWorldTimerManager().ClearTimer(ReturnToPoolTimerHandle);
 
 	// 물리 및 비주얼 차단
 	if (InteractionSphere)
@@ -302,11 +335,25 @@ void ABlackoutDropItem::OnReturnToPool_Implementation()
 		InteractionSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	}
 	SetActorHiddenInGame(true);
+
+	if (InteractionWidget)
+	{
+		InteractionWidget->SetHiddenInGame(true);
+		InteractionWidget->SetVisibility(false, true);
+	}
+
+	// 나이아가라 이펙트 즉시 해제 및 초기화
+	if (RewardEffectComponent)
+	{
+		RewardEffectComponent->DeactivateImmediate();
+		RewardEffectComponent->SetAsset(nullptr);
+	}
 }
 
 void ABlackoutDropItem::SetDropItemType(EBlackoutDropItemType NewType)
 {
 	DropItemType = NewType;
+	UpdateRewardVisual();
 }
 
 void ABlackoutDropItem::InitializeDropReward(EBlackoutDropItemType NewType, float NewSupplyRatio)
@@ -321,6 +368,9 @@ void ABlackoutDropItem::InitializeDropReward(EBlackoutDropItemType NewType, floa
 		SecondaryAmmoChargeRatio = NewSupplyRatio;
 	}
 	// 소모품일 경우 SupplyRatio가 쓰이지 않으므로 무시합니다.
+
+	// 보상 타입 주입 완료 시점에 비주얼 동기화
+	UpdateRewardVisual();
 }
 
 void ABlackoutDropItem::SnapToGround(AActor* IgnoreActor)
@@ -408,14 +458,109 @@ void ABlackoutDropItem::SetActorHiddenInGame(bool bNewHidden)
 	{
 		InteractionWidget->SetHiddenInGame(bNewHidden);
 	}
+
+	// 가시성 변화에 맞춰 이펙트 상태도 완벽히 동기화
+	UpdateRewardVisual();
 }
 
 void ABlackoutDropItem::PostNetReceive()
 {
 	Super::PostNetReceive();
 
+	const bool bIsHiddenOnClient = IsHidden();
+
 	if (InteractionWidget)
 	{
-		InteractionWidget->SetHiddenInGame(IsHidden());
+		InteractionWidget->SetHiddenInGame(bIsHiddenOnClient);
+		InteractionWidget->SetVisibility(!bIsHiddenOnClient, true);
+	}
+
+	// 클라이언트 측 가시성 복제에 따른 나이아가라 이펙트 완벽 동기화
+	UpdateRewardVisual();
+}
+
+void ABlackoutDropItem::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ABlackoutDropItem, bIsCollected);
+	DOREPLIFETIME(ABlackoutDropItem, DropItemType);
+}
+
+void ABlackoutDropItem::OnRep_DropItemType()
+{
+	UpdateRewardVisual();
+}
+
+void ABlackoutDropItem::OnRep_bIsCollected()
+{
+	if (bIsCollected)
+	{
+		if (InteractionSphere)
+		{
+			InteractionSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		}
+		SetActorHiddenInGame(true);
+
+		if (InteractionWidget)
+		{
+			InteractionWidget->SetHiddenInGame(true);
+			InteractionWidget->SetVisibility(false, true);
+		}
+		
+		UpdateRewardVisual();
+	}
+}
+
+void ABlackoutDropItem::UpdateRewardVisual()
+{
+	// 가시성을 판단하는 종합 체크 (게임 내에 숨겨졌거나 이미 획득한 상태라면 비가시 처리)
+	const bool bShouldBeVisible = !IsHidden() && !bIsCollected;
+
+	if (!bShouldBeVisible)
+	{
+		if (RewardEffectComponent)
+		{
+			RewardEffectComponent->DeactivateImmediate();
+			RewardEffectComponent->SetAsset(nullptr);
+		}
+		return;
+	}
+
+	// 활성화 시 보상 타입에 대응하는 이펙트 선택
+	UNiagaraSystem* TargetFX = nullptr;
+	switch (DropItemType)
+	{
+	case EBlackoutDropItemType::PrimaryAmmo:
+		TargetFX = PrimaryAmmoFX;
+		break;
+	case EBlackoutDropItemType::SecondaryAmmo:
+		TargetFX = SecondaryAmmoFX;
+		break;
+	case EBlackoutDropItemType::Consumable:
+		TargetFX = ConsumableFX;
+		break;
+	}
+
+	if (RewardEffectComponent)
+	{
+		// 이미 설정된 에셋과 다르면 교체
+		if (RewardEffectComponent->GetAsset() != TargetFX)
+		{
+			RewardEffectComponent->DeactivateImmediate();
+			RewardEffectComponent->SetAsset(TargetFX);
+		}
+
+		if (TargetFX)
+		{
+			if (!RewardEffectComponent->IsActive())
+			{
+				RewardEffectComponent->Activate(true);
+			}
+		}
+		else
+		{
+			RewardEffectComponent->DeactivateImmediate();
+		}
 	}
 }

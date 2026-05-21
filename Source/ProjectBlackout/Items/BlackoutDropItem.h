@@ -4,7 +4,6 @@
 #include "GameFramework/Actor.h"
 #include "Interfaces/BlackoutInteractable.h"
 #include "Interfaces/BlackoutPoolable.h"
-#include "GameplayTagContainer.h"
 #include "BlackoutDropItem.generated.h"
 
 class USphereComponent;
@@ -12,6 +11,8 @@ class UStaticMeshComponent;
 class UWidgetComponent;
 class UBOConsumableData;
 class ABlackoutPlayerState;
+class UNiagaraComponent;
+class UNiagaraSystem;
 
 /**
  * 드롭 아이템 종류를 나타내는 Enum
@@ -26,6 +27,7 @@ enum class EBlackoutDropItemType : uint8
 
 /**
  * 풀링 및 상호작용을 지원하며 주무기/보조무기 탄약 및 무작위 소모품을 획득할 수 있는 월드 드롭 아이템 클래스입니다.
+ * 지속형 나이아가라 이펙트를 직접 내장하여 생명 주기에 따라 정교하게 시각 효과를 제어합니다.
  */
 UCLASS(Blueprintable)
 class PROJECTBLACKOUT_API ABlackoutDropItem : public AActor, public IBlackoutInteractable, public IBlackoutPoolableInterface
@@ -48,6 +50,9 @@ public:
 	virtual void SetActorHiddenInGame(bool bNewHidden) override;
 	virtual void PostNetReceive() override;
 
+	// 속성 리플리케이션 명세
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
 	// 드롭 아이템 타입 설정
 	UFUNCTION(BlueprintCallable, Category = "Blackout|DropItem")
 	void SetDropItemType(EBlackoutDropItemType NewType);
@@ -69,6 +74,9 @@ protected:
 	// 수명 만료 시 호출되어 자신을 풀로 반환하는 함수 (서버 전용)
 	void OnLifeTimeExpired();
 
+	// 드롭 아이템의 보상 유형, 가시성, 획득 상태를 종합 분석하여 나이아가라 FX 재생을 동기화합니다. (클라이언트 동기화 무결성)
+	void UpdateRewardVisual();
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Blackout|Components")
 	TObjectPtr<USphereComponent> InteractionSphere;
 
@@ -78,9 +86,16 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Blackout|Components")
 	TObjectPtr<UWidgetComponent> InteractionWidget;
 
-	// 이 드롭 아이템의 유형
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Blackout|DropItem")
+	// 이펙트 출력을 위한 나이아가라 컴포넌트 직접 탑재
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Blackout|Components")
+	TObjectPtr<UNiagaraComponent> RewardEffectComponent;
+
+	// 이 드롭 아이템의 유형 (클라이언트로 동기화됨)
+	UPROPERTY(ReplicatedUsing = OnRep_DropItemType, EditAnywhere, BlueprintReadOnly, Category = "Blackout|DropItem")
 	EBlackoutDropItemType DropItemType = EBlackoutDropItemType::PrimaryAmmo;
+
+	UFUNCTION()
+	void OnRep_DropItemType();
 
 	// 주무기 탄약 충전 비율 (최대 탄약 대비 비율, 예: 0.2f면 20% 충전)
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Blackout|DropItem|Ammo", meta = (ClampMin = 0.0f, ClampMax = 1.0f))
@@ -114,12 +129,28 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Blackout|DropItem|Placement", meta = (ClampMin = 0.0f))
 	float GroundSnapClearance = 1.0f;
 
-	// 동일 프레임 중복 획득을 방지하는 서버용 획득 여부 플래그
-	UPROPERTY(Transient)
+	// 동일 프레임 중복 획득을 방지하고 클라이언트 즉각 소멸을 보장하는 복제 플래그
+	UPROPERTY(ReplicatedUsing = OnRep_bIsCollected, Transient)
 	bool bIsCollected = false;
+
+	UFUNCTION()
+	void OnRep_bIsCollected();
+
+	// 각 보상 종류별로 부착할 나이아가라 시스템 (에디터 블루프린트에서 세팅)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Blackout|DropItem|Visual")
+	TObjectPtr<UNiagaraSystem> PrimaryAmmoFX;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Blackout|DropItem|Visual")
+	TObjectPtr<UNiagaraSystem> SecondaryAmmoFX;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Blackout|DropItem|Visual")
+	TObjectPtr<UNiagaraSystem> ConsumableFX;
 
 private:
 	FTimerHandle LifeTimeTimerHandle;
+
+	// 획득 시 클라이언트로의 즉각 복제(ForceNetUpdate) 완료 후 안전하게 풀로 반환하기 위한 미세 지연 타이머 핸들
+	FTimerHandle ReturnToPoolTimerHandle;
 
 	// 상호작용 가능한지 여부를 확인하기 위해 플레이어 상태를 조회하는 헬퍼 함수
 	bool TryResolvePlayerState(AActor* Interactor, ABlackoutPlayerState*& OutPlayerState) const;

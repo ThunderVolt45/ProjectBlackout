@@ -27,6 +27,9 @@
 #include "Engine/OverlapResult.h"
 #include "GAS/Attributes/BlackoutBaseAttributeSet.h"
 #include "Net/UnrealNetwork.h"
+#include "Items/BlackoutDropItem.h"
+#include "Components/SphereComponent.h"
+#include "Components/WidgetComponent.h"
 
 ABlackoutPlayerCharacter::ABlackoutPlayerCharacter(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer.SetDefaultSubobjectClass<UBlackoutPlayerMovementComponent>(ACharacter::CharacterMovementComponentName))
@@ -276,6 +279,21 @@ bool ABlackoutPlayerCharacter::TryInteractWithFocusedActor()
 		return false;
 	}
 
+	// 로컬 체감 레이턴시 0ms 극대화를 위한 선제 숨김/비활성화 처리 (클라이언트 및 서버 로컬 공통)
+	if (ABlackoutDropItem* DropItem = Cast<ABlackoutDropItem>(TargetActor))
+	{
+		DropItem->SetActorHiddenInGame(true);
+		if (UWidgetComponent* Widget = DropItem->FindComponentByClass<UWidgetComponent>())
+		{
+			Widget->SetHiddenInGame(true);
+			Widget->SetVisibility(false, true);
+		}
+		if (USphereComponent* Sphere = DropItem->FindComponentByClass<USphereComponent>())
+		{
+			Sphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		}
+	}
+
 	if (HasAuthority())
 	{
 		IBlackoutInteractable::Execute_OnInteract(TargetActor, this);
@@ -284,6 +302,9 @@ bool ABlackoutPlayerCharacter::TryInteractWithFocusedActor()
 	{
 		Server_InteractWithActor(TargetActor);
 	}
+
+	// 상호작용 실행 즉시 포커스를 해제하여 중복 요청 및 위젯 잔상 갱신 대기를 미연에 방지
+	FocusedInteractableActor = nullptr;
 
 	return true;
 }
