@@ -82,11 +82,11 @@ protected:
 
 	// 파괴 시 조각을 바깥으로 밀어내는 기본 힘입니다.
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Blackout|Breakable|Physics", meta = (ClampMin = "0.0"))
-	float BreakImpulseStrength = 150.0f;
+	float BreakImpulseStrength = 20.0f;
 
 	// 파괴 시 조각에 추가할 위쪽 힘입니다.
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Blackout|Breakable|Physics", meta = (ClampMin = "0.0"))
-	float BreakImpulseUpwardBoost = 35.0f;
+	float BreakImpulseUpwardBoost = 150.0f;
 
 	// 파괴 직후 조각의 선형 감쇠값입니다. 값이 높을수록 덜 미끄러집니다.
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Blackout|Breakable|Physics", meta = (ClampMin = "0.0"))
