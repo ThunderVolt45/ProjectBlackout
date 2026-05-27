@@ -251,6 +251,12 @@ void UBlackoutGA_Dodge::OnChainInputPressed(float TimeWaited)
 {
 	ChainInputTask = nullptr;
 
+	// 체인 입력이 감지되었으므로 이동 캔슬 타이머를 즉각 해제하여 예기치 못한 취소를 미연에 방지합니다.
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(CancelInputCheckTimerHandle);
+	}
+
 	if (HasAuthority(&CurrentActivationInfo))
 	{
 		// 서버만 체인 회피 재시작과 몽타주 위치 리셋을 확정합니다.
@@ -315,15 +321,15 @@ void UBlackoutGA_Dodge::OnAbilityCancelableEventReceived(FGameplayEventData Payl
 		}
 	}
 
-	// 캔슬 윈도우가 열려 있는 동안 무브먼트(WASD) 입력을 실시간(0.02초 주기) 모니터링하기 시작합니다.
+	// 연속 회피(체인) 입력을 유예하기 위해 0.12초(120ms) 후에 이동 입력 감지 타이머를 기동합니다.
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().SetTimer(
 			CancelInputCheckTimerHandle,
 			this,
 			&UBlackoutGA_Dodge::CheckCancelInput,
-			0.02f,
-			true);
+			0.12f,
+			false); // 원샷 타이머로 120ms 시점에 단 한 번 체크
 	}
 }
 
@@ -334,9 +340,15 @@ void UBlackoutGA_Dodge::CheckCancelInput()
 		return;
 	}
 
+	// 체인 입력이 대기 중이거나 이미 큐에 쌓여 있다면 강제 캔슬을 방지하고 체인을 양보합니다.
+	if (bChainInputQueued || bHasQueuedChainInputPayload)
+	{
+		return;
+	}
+
 	if (ABlackoutPlayerCharacter* PlayerCharacter = CurrentActorInfo ? Cast<ABlackoutPlayerCharacter>(CurrentActorInfo->AvatarActor.Get()) : nullptr)
 	{
-		// 플레이어의 이동 입력(WASD)이 감지되면 즉시 몽타주를 정지하고 일반 무브먼트로 제어를 인계합니다.
+		// 유예 시간이 지난 시점에도 여전히 이동 입력(WASD)이 들어가 있다면 강제 정지 및 제어 인계를 수행합니다.
 		if (!PlayerCharacter->GetCachedMoveInput().IsNearlyZero())
 		{
 			BO_LOG_GAS(Log, "GA_Dodge: 캔슬 윈도우 내 이동 입력 감지. 몽타주를 강제 정지하고 어빌리티를 취소합니다.");
