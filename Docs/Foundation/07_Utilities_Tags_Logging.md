@@ -19,6 +19,7 @@ classDiagram
         +FGameplayTag Kill_Melee
         +FGameplayTag Kill_WeakSpot
         +FGameplayTag Kill_MultiTarget_Count3
+        +FGameplayTag Event_Input_MoveCancel
         +FGameplayTag Checkpoint_MidBoss
         +FGameplayTag Checkpoint_MainBoss
         +FGameplayTag LobbyTag_InfiniteAmmo
@@ -69,5 +70,6 @@ classDiagram
 
 - `BlackoutGameplayTags`: `UGameplayTagsManager::AddNativeGameplayTag()`로 네이티브 태그 등록. 모듈 StartupModule에서 `AddNativeTags()` 호출.
 - 네이티브 태그는 `.ini` 의존 없이 C++ 심볼로 직접 참조 가능해 오타 컴파일 오류로 잡힘.
+- `Event.Input.MoveCancel`: 기본 이동 입력(WASD/좌스틱)을 활성 GA의 후딜 캔슬 요청으로 전달하는 Gameplay Event 태그. 이동 입력은 GA가 아니므로 `CancelAbilitiesWithTag`로 직접 취소하지 않고, ASC 브릿지를 통해 현재 활성 GA가 수신 후 종료 여부를 판단합니다.
 - `LogBlackoutGAS`: GA `ActivateAbility`/`EndAbility` 진입·종료 로그 필수 기록.
 - `LogBlackoutPool`: `SpawnFromPool` miss(큐 비어 동적 스폰) 추적용.

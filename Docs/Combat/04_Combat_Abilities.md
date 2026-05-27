@@ -13,6 +13,7 @@ classDiagram
 
     class UBlackoutAbilitySystemComponent {
         +HandleAbilityInputPressed(EBlackoutAbilityInputID) void
+        +RequestMovementCancel(FVector2D) void
         +AbilitySpecInputPressed(FGameplayAbilitySpec&) void
         +ServerSetReplicatedEvent(InputPressed, Handle, ScopedKey, OriginalKey) void
         +RecordInputSyncPayload(FBlackoutAbilityInputSyncPayload) void
@@ -73,6 +74,8 @@ classDiagram
         -StartMontageTask() void
         -StartComboInputTask() void
         -OnComboInputPressed(float) void
+        -StartMovementCancelTask() void
+        -OnMovementCancelRequested(FGameplayEventData) void
         -ScheduleComboWindowTimers(FBlackoutComboSectionDef) void
         -OnComboWindowOpened() void
         -OnComboWindowClosed() void
@@ -95,6 +98,8 @@ classDiagram
         -StartMontageTask() void
         -StartChainInputTask() void
         -OnChainInputPressed(float) void
+        -StartMovementCancelTask() void
+        -OnMovementCancelRequested(FGameplayEventData) void
         -ScheduleChainWindowTimers() void
         -OnChainWindowOpened() void
         -OnChainWindowClosed() void
@@ -110,7 +115,9 @@ classDiagram
     UGA_Melee_Player ..> ABOMeleeWeapon : PerformSweep
     UGA_Melee_Player ..> FBlackoutComboSectionDef : 윈도우 시각 정의
     UGA_Melee_Player ..> UBlackoutAbilitySystemComponent : WaitInputPress (표준 GAS 경로)
+    UGA_Melee_Player ..> UBlackoutAbilitySystemComponent : Event.Input.MoveCancel
     UGA_Dodge ..> UBlackoutAbilitySystemComponent : WaitInputPress (표준 GAS 경로)
+    UGA_Dodge ..> UBlackoutAbilitySystemComponent : Event.Input.MoveCancel
     UBlackoutAbilitySystemComponent ..> FBlackoutAbilityInputSyncPayload : timestamp 메타데이터
 ```
 
@@ -139,14 +146,16 @@ classDiagram
   - 서버는 섹션 진입 시점(`GetServerWorldTimeSeconds()`)을 기준으로 `ScheduleComboWindowTimers` 가 윈도우 open/close 와 grace close 타이머를 `SetTimer` 합니다. **AnimNotifyState 는 콤보 상태 머신에 사용하지 않습니다** — 히트박스 활성/비활성(`HandleMeleeAttackWindowBegin/End`)과 시각 effect 트리거 전용.
   - 콤보 입력은 표준 `UAbilityTask_WaitInputPress` + ASC `EAbilityGenericReplicatedEvent::InputPressed` 경로로 수집합니다. 클라이언트는 활성 GA에 대해 `AbilitySpecInputPressed` 직후 명시적으로 `ServerSetReplicatedEvent(InputPressed, ...)` 를 호출하여 서버 GA의 `WaitInputPress` 를 발화시킵니다.
   - 입력이 어디에도 매칭되지 않으면 **EndAbility 를 호출하지 않고** 현재 섹션의 `RecoveryEndAtSeconds` 까지 자연 종료되도록 두고, 입력 버퍼만 비웁니다.
-  - **Gameplay Event 기반 조기 캔슬**: 몽타주 후반부의 딜레이/복귀 포즈에 도달했을 때, 몽타주에 배치된 AnimNotify가 `Event_Montage_AbilityCancelable` 게임플레이 이벤트를 보냅니다. GA 내부에서 `WaitGameplayEvent` 태스크를 통해 이 이벤트를 감지하면 즉시 `EndAbility`를 조기 호출하여 캐릭터의 제어권(차단 태그 해제)을 복구합니다.
+  - **Gameplay Event 기반 후딜 캔슬 상태 전환**: 몽타주 후반부의 딜레이/복귀 포즈에 도달했을 때, 몽타주에 배치된 AnimNotify가 `Event.Montage.AbilityCancelable` 게임플레이 이벤트를 보냅니다. GA 내부에서 `WaitGameplayEvent` 태스크를 통해 이 이벤트를 감지하면 `bCancelWindowOpen` 같은 내부 상태를 켜고 `State.Attacking` 차단 태그를 해제합니다. 이 이벤트 자체는 즉시 `EndAbility`를 호출하지 않습니다.
+  - **이동 입력 기반 후딜 캔슬**: WASD/좌스틱 이동은 GA가 아니므로 `CancelAbilitiesWithTag` 대상이 아닙니다. `ABlackoutPlayerCharacter::Move()`는 non-zero 이동 입력을 `UBlackoutAbilitySystemComponent::RequestMovementCancel()`로 전달하고, ASC는 `Event.Input.MoveCancel` Gameplay Event를 활성 GA에 브릿지합니다. `UGA_Melee_Player`는 이 이벤트를 수신했을 때 `bCancelWindowOpen == true` 이고 콤보 윈도우/그레이스/버퍼 입력이 우선되지 않는 경우에만 `EndAbility`를 호출합니다.
   - `AnimNotify` 가 AbilityTask 로 히트 노티를 호출 → `ABOMeleeWeapon::PerformSweep` 결과에 `GE_Damage` 적용(기존 유지).
 - **`UGA_Dodge`** (TDD v5 §4.1 v2):
   - 몽타주 재생은 `UAbilityTask_PlayMontageAndWait` 로 처리하고, `Multicast_PlayDodgeMontage` 는 폐기합니다. RepAnimMontageInfo 가 시뮬레이트 프록시에 전파합니다.
   - 체인 윈도우 open/close 는 `ChainWindowOpenAtSeconds`/`ChainWindowCloseAtSeconds` 데이터값을 사용한 서버 World Time 타이머로 관리합니다. `BOAnimNotify_DodgeChainWindowOpen` 등 노티파이는 시각 effect 보조 전용입니다.
   - 클라이언트 재입력은 멜리와 동일한 표준 GAS 경로(`AbilitySpecInputPressed` + `ServerSetReplicatedEvent`)로 서버에 전파합니다.
   - 스태미나 소모는 GE Cost 로 처리합니다. `ApplyModToAttribute` 직접 호출은 금지합니다. I-Frame 태그·루트 모션·`LaunchCharacter` 는 서버 검증 성공 후에만 트리거하며, 클라이언트는 prediction 경로로 자연 복제됩니다.
-  - **Gameplay Event 기반 조기 캔슬**: 구르기 몽타주의 후반부 복귀 구간에서 `Event_Montage_AbilityCancelable` 게임플레이 이벤트가 전송되면, GA 내부의 `WaitGameplayEvent` 태스크가 발화하여 즉시 `EndAbility`를 호출하고 `State_Locked` 태그를 반환함으로써 다른 능력의 즉시 시전을 허용합니다.
+  - **Gameplay Event 기반 후딜 캔슬 상태 전환**: 구르기 몽타주의 후반부 복귀 구간에서 `Event.Montage.AbilityCancelable` 게임플레이 이벤트가 전송되면, GA 내부의 `WaitGameplayEvent` 태스크가 발화하여 `bCancelWindowOpen` 같은 내부 상태를 켜고 `State.Locked` 차단 태그를 해제합니다. 이 이벤트 자체는 즉시 `EndAbility`를 호출하지 않습니다.
+  - **이동 입력 기반 후딜 캔슬**: WASD/좌스틱 이동은 `Event.Input.MoveCancel` Gameplay Event로 브릿지됩니다. `UGA_Dodge`는 이 이벤트를 수신했을 때 `bCancelWindowOpen == true` 이고 체인 윈도우/그레이스/버퍼 입력이 우선되지 않는 경우에만 `EndAbility`를 호출합니다. 우선순위는 `Dodge 재입력/체인 입력 > 다른 GA 입력 캔슬 > 이동 캔슬` 입니다.
 - **입력 보정 공통 규칙**:
   - `SequenceId` 는 입력별 단조 증가를 요구하며, 중복/역순 입력은 버립니다.
   - `FBlackoutAbilityInputSyncPayload` 의 timestamp/sequence 는 **메타데이터 부가 채널**입니다. 입력 트리거는 표준 GAS 복제 이벤트가 담당하고, 페이로드는 서버 grace clamp 계산에만 활용합니다.
@@ -155,6 +164,6 @@ classDiagram
   - 기본 튜닝값: 클라 ring buffer 250 ms, 서버 receive buffer 150 ms, late grace `BaseGrace + RTT*0.5 + Jitter` (상한 150 ms), section cancel-into-next 120~180 ms.
 - **전 GA 공통**: `ReplicationPolicy=ReplicateNo`, `InstancingPolicy=InstancedPerActor`, `NetExecutionPolicy=LocalPredicted`. `bReplicateInputDirectly=false` 유지.
 - **조기 캔슬(Gameplay Event) 시스템 공통**:
-  - 플레이어의 행동 봉쇄 어빌리티(회피, 근접 공격 등)에 대해 몽타주 후반부 복귀 및 대기 모션 프레임에 `AN_AbilityCancelable` 애니메이션 노티파이를 심어 `Event_Montage_AbilityCancelable` 이벤트를 ASC에 전달하도록 설계합니다.
-  - 이를 수신한 해당 GA는 클라이언트 예측(Predicted) 경로상에서 즉시 `EndAbility()`를 호출하여 차단 태그를 해제하고, 몽타주는 Blend Out으로 부드럽게 감쇠하도록 유도합니다.
-
+  - 플레이어의 행동 봉쇄 어빌리티(회피, 근접 공격 등)에 대해 몽타주 후반부 복귀 및 대기 모션 프레임에 `AN_AbilityCancelable` 애니메이션 노티파이를 심어 `Event_Montage_AbilityCancelable`(`Event.Montage.AbilityCancelable`) 이벤트를 ASC에 전달하도록 설계합니다.
+  - 이를 수신한 해당 GA는 클라이언트 예측(Predicted) 경로상에서 즉시 종료하지 않고, 후딜 캔슬 가능 상태로 전환한 뒤 행동 차단 태그만 해제합니다. 이후 새 Ability input은 해당 신규 GA의 `CancelAbilitiesWithTag` 경로로 기존 GA를 종료하고, 기본 이동 입력은 `Event.Input.MoveCancel` 경로로 기존 GA에 종료 요청을 보냅니다.
+  - `Event.Input.MoveCancel`은 axis 값 자체를 권위 판단으로 쓰지 않습니다. 이벤트 payload에는 이동 입력 벡터와 입력 시각을 담되, 최종 종료 여부는 현재 활성 GA가 자신의 콤보/체인 우선순위와 cancel window 상태를 기준으로 결정합니다.
