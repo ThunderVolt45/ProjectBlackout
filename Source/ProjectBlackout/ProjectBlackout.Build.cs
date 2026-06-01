@@ -39,12 +39,6 @@ public class ProjectBlackout : ModuleRules
 			"NavigationSystem"
 		});
 
-		if (Target.Platform == UnrealTargetPlatform.Win64 && Target.Type != TargetType.Server)
-		{
-			PublicDependencyModuleNames.Add("DLSSBlueprint");
-			PublicDependencyModuleNames.Add("StreamlineReflexBlueprint");
-		}
-
 		PrivateDependencyModuleNames.AddRange(new string[] {"MoviePlayer" });
 
 		PublicIncludePaths.AddRange(new string[] {

@@ -7,7 +7,6 @@
 #include "Engine/TextureRenderTarget2D.h"
 #include "Engine/SceneCapture2D.h"
 #include "Components/SceneCaptureComponent2D.h"
-#include "TimerManager.h"
 
 
 void ABlackoutCharacterPreviewManager::BeginPlay()
@@ -21,17 +20,17 @@ void ABlackoutCharacterPreviewManager::BeginPlay()
 	DynamicRT->InitAutoFormat(RTSizeX , RTSizeY );
 	DynamicRT->UpdateResourceImmediate(true);
 	
-	
-	CaptureComp = FindComponentByClass<USceneCaptureComponent2D>();
-	if (CaptureComp)
-	{
-		CaptureComp->TextureTarget = DynamicRT;
-		
-		CaptureComp->PrimitiveRenderMode = ESceneCapturePrimitiveRenderMode::PRM_UseShowOnlyList; 
-	}
 	TArray<AActor*> Captures;
-	BO_LOG_CORE(Log, "Manager BeginPlay: DynamicRT created (%dx%d), CaptureComp=%s",
-		RTSizeX, RTSizeY, CaptureComp ? TEXT("OK") : TEXT("NULL"));
+	UGameplayStatics::GetAllActorsOfClass(this , ASceneCapture2D::StaticClass(), Captures);
+	for (AActor* Actor : Captures)
+	{
+		if (ASceneCapture2D* SC  =Cast<ASceneCapture2D>(Actor))
+		{
+			SC->GetCaptureComponent2D()->TextureTarget = DynamicRT;
+		}
+	}
+	BO_LOG_CORE(Log, "Manager BeginPlay: DynamicRT created (%dx%d), SceneCapture count=%d",
+	RTSizeX, RTSizeY, Captures.Num());
 	
 }
 
@@ -73,23 +72,6 @@ void ABlackoutCharacterPreviewManager::SetPreviewCharacter(
 	{
 		// Preview Pawn 은 각 client local — server 의 Pawn 이 다른 client 로 replicate 되면 stack
 		CurrentPawn->SetReplicates(false);
-		
-		if (CaptureComp)
-		{
-			CaptureComp->ShowOnlyActors.Reset();
-			CaptureComp->ShowOnlyActors.Add(CurrentPawn);
-			
-			TArray<AActor*> AttachedActors;
-			CurrentPawn->GetAttachedActors(AttachedActors);
-			for (AActor* Attached : AttachedActors)
-			{
-				CaptureComp->ShowOnlyActors.Add(Attached);
-			}
-
-			// client 에서 every-frame 캡처가 안 도는 정황 → 스폰 직후 명시적 1회 캡처(포즈 잡힌 뒤).
-			GetWorldTimerManager().SetTimer(PreviewCaptureTimerHandle, this,
-				&ABlackoutCharacterPreviewManager::CaptureCurrentPreview, 0.05f, false);
-		}
 	}
 	CurrentPawnClass = PawnClass;
 	
@@ -112,21 +94,9 @@ void ABlackoutCharacterPreviewManager::ClearPreview()
 
 	CurrentPawnClass = nullptr;
 
-	if (CaptureComp)
-	{
-		CaptureComp->ShowOnlyActors.Reset();
-	}
 	TArray<AActor*> AllPawns;
 	UGameplayStatics::GetAllActorsOfClass(this, APawn::StaticClass(), AllPawns);
 	BO_LOG_CORE(Log, "Pawns in world after Clear: %d", AllPawns.Num());
-}
-
-void ABlackoutCharacterPreviewManager::CaptureCurrentPreview()
-{
-	if (CaptureComp)
-	{
-		CaptureComp->CaptureScene();
-	}
 }
 
 
