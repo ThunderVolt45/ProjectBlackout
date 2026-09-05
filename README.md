@@ -1,5 +1,7 @@
 # Project Blackout
 
+![Blackout 타이틀](/Docs/Images/title.png)
+
 > 3인칭 슈팅(TPS) 기반 다이브 & 소울라이크 **4인 협동 PvE 보스 러시** 게임
 
 | 항목 | 내용 |
@@ -12,7 +14,7 @@
 | 언어 | C++ + Blueprints |
 | 핵심 시스템 | GAS(Gameplay Ability System), 데이터 기반 설계, 오브젝트 풀링 |
 
-## 게임 소개
+## 🎮 게임 소개
 
 4명의 플레이어가 팀을 이루어 중간 보스 **약삭빠름(Shrewd)** 를 거쳐 3페이즈로 구성된 메인 보스 **타락한 약탈자(Corrupted Ravager)** 에 도전하는 보스 러시 게임입니다.
 
@@ -29,7 +31,7 @@
 | **B — Demolition** | 광역 딜 | 포자피개(샷건), 메리디안(유탄발사기) | 다수 미니언 광역 소탕, 3마리 이상 동시 처치 시 자원 드랍 |
 | **C — Sniper** | 정밀 타격 | 볼트액션 소총, 리피터 피스톨 | 보스 약점·정예 미니언 저격, 치명타 처치 시 자원 드랍 |
 
-## 프로젝트 구조
+## 🏗️ 프로젝트 구조
 
 ```
 ProjectBlackout/
@@ -44,7 +46,7 @@ ProjectBlackout/
 
 > `Source/ProjectBlackout/Variant_*` 디렉토리는 언리얼 템플릿이 생성한 샘플 코드로, 프로젝트에서 사용하지 않습니다.
 
-## 문서
+## 📚 문서
 
 | 문서 | 설명 |
 | ---- | ---- |
@@ -54,6 +56,18 @@ ProjectBlackout/
 | [클래스 다이어그램](Docs/Project_Blackout_클래스다이어그램.md) | 전체 클래스 관계 개요 (도메인별 상세는 `Docs/Combat/`, `Docs/Foundation/`, `Docs/AI_Boss/`, `Docs/NET/`, `Docs/UI/` 참조) |
 | [시퀀스 다이어그램](Docs/Project_Blackout_시퀀스다이어그램.md) | 주요 플로우 시퀀스 |
 
-## 라이선스
+## 📸 스크린샷
+
+![Blackout 스크린샷 1](/Docs/Images/battle.png)
+
+![Blackout 스크린샷 2](/Docs/Images/result.png)
+
+## 📖 기여 가이드
+
+- `main`, `develop` 브랜치에 직접 커밋하지 않습니다. 항상 `feature/` 브랜치를 생성하고, PR의 base는 `develop`입니다.
+- 커밋 메시지는 태그 형식(`Feat`, `Fix`, `Design`, `Refactor`, `Docs`, `Chore`)을 사용합니다.
+- 상세 규칙은 [`Docs/CONVENTIONS.md`](Docs/CONVENTIONS.md)를 참조하세요.
+
+## 🔑 라이선스
 
 이 프로젝트의 코드는 [MIT License](LICENSE)를 따릅니다. 단, `Content/Assets/`의 외부 에셋은 각 에셋 제작자의 라이선스를 따르며 저장소에 포함되지 않습니다.
